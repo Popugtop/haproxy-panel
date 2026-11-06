@@ -1,0 +1,9 @@
+{
+  "t": "cmd",
+  "id": "c-22",
+  "op": "update_agent",
+  "args": {
+    "version": "0.3.0",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+}

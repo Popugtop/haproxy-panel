@@ -1,0 +1,24 @@
+{
+  "name": "popug-bridges",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "protocol",
+    "panel/server",
+    "panel/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:server": "npm run dev -w panel/server",
+    "dev:web": "npm run dev -w panel/web",
+    "test": "npm test -w protocol -w panel/server && (cd agent && go test ./...)",
+    "typecheck": "npm run typecheck -w protocol -w panel/server -w panel/web",
+    "build": "npm run build -w panel/server -w panel/web",
+    "setup": "bash scripts/dev-setup.sh",
+    "dev": "npm run dev:server & npm run dev:web & wait",
+    "dev:demo": "DEMO=1 npm run dev:server & npm run dev:web & wait"
+  }
+}

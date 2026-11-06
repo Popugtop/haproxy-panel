@@ -1,0 +1,13 @@
+# Панель за Caddy. WebSocket (/ws/agent) проксируется без доп. настроек.
+panel.example.com {
+	encode zstd gzip
+
+	# Caddy в Docker и панель в соседнем compose-проекте: подключите панель к сети caddy и пишите panel:3000.
+	# Caddy на хосте: 127.0.0.1:3000.
+	reverse_proxy 127.0.0.1:3000 {
+		# Агенты держат соединение открытым, таймауты читающей стороны не нужны.
+		transport http {
+			read_timeout 0
+		}
+	}
+}

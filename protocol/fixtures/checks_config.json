@@ -1,0 +1,14 @@
+{
+  "t": "checks_config",
+  "intervalSec": 30,
+  "targets": [
+    {
+      "routeId": "r1",
+      "exitId": "e1",
+      "host": "203.0.113.9",
+      "port": 443,
+      "sni": "de.popug.cloud",
+      "proxy": true
+    }
+  ]
+}

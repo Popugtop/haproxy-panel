@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+agent/bin/
+agent/dist/
+*.log
+.DS_Store
+
+# ключи подписи релизов агента: приватный не должен попасть в репозиторий
+release.key
+*.key

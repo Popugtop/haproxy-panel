@@ -1,0 +1,11 @@
+{
+  "t": "cmd",
+  "id": "c-18",
+  "op": "apply_config",
+  "args": {
+    "version": 7,
+    "cfg": "global\n    log /dev/log local0\n",
+    "sniMap": "de.popug.cloud be_de\n",
+    "validateOnly": false
+  }
+}

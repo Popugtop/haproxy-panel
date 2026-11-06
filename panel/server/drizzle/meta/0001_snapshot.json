@@ -1,0 +1,943 @@
+{
+  "id": "ff46f69f-d381-4d6b-a470-3b2f62ae3c2d",
+  "prevId": "e7dd86de-b4a5-4a5a-99d1-e6edcc79c0fb",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.audit_log": {
+      "name": "audit_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "audit_log_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor": {
+          "name": "actor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diff": {
+          "name": "diff",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "audit_at_idx": {
+          "name": "audit_at_idx",
+          "columns": [
+            {
+              "expression": "at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.backend_daily": {
+      "name": "backend_daily",
+      "schema": "",
+      "columns": {
+        "node_id": {
+          "name": "node_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "backend": {
+          "name": "backend",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bin_bytes": {
+          "name": "bin_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "bout_bytes": {
+          "name": "bout_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "backend_daily_node_id_nodes_id_fk": {
+          "name": "backend_daily_node_id_nodes_id_fk",
+          "tableFrom": "backend_daily",
+          "tableTo": "nodes",
+          "columnsFrom": [
+            "node_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "backend_daily_node_id_backend_day_pk": {
+          "name": "backend_daily_node_id_backend_day_pk",
+          "columns": [
+            "node_id",
+            "backend",
+            "day"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.backend_metrics": {
+      "name": "backend_metrics",
+      "schema": "",
+      "columns": {
+        "node_id": {
+          "name": "node_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "backend": {
+          "name": "backend",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "res": {
+          "name": "res",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ts": {
+          "name": "ts",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dt": {
+          "name": "dt",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "n": {
+          "name": "n",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "bin_bytes": {
+          "name": "bin_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bout_bytes": {
+          "name": "bout_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scur_avg": {
+          "name": "scur_avg",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "scur_max": {
+          "name": "scur_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "servers_up_min": {
+          "name": "servers_up_min",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "servers_total": {
+          "name": "servers_total",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "backend_metrics_node_id_nodes_id_fk": {
+          "name": "backend_metrics_node_id_nodes_id_fk",
+          "tableFrom": "backend_metrics",
+          "tableTo": "nodes",
+          "columnsFrom": [
+            "node_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "backend_metrics_node_id_backend_res_ts_pk": {
+          "name": "backend_metrics_node_id_backend_res_ts_pk",
+          "columns": [
+            "node_id",
+            "backend",
+            "res",
+            "ts"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.node_daily": {
+      "name": "node_daily",
+      "schema": "",
+      "columns": {
+        "node_id": {
+          "name": "node_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rx_bytes": {
+          "name": "rx_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "tx_bytes": {
+          "name": "tx_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "node_daily_node_id_nodes_id_fk": {
+          "name": "node_daily_node_id_nodes_id_fk",
+          "tableFrom": "node_daily",
+          "tableTo": "nodes",
+          "columnsFrom": [
+            "node_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "node_daily_node_id_day_pk": {
+          "name": "node_daily_node_id_day_pk",
+          "columns": [
+            "node_id",
+            "day"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.node_live": {
+      "name": "node_live",
+      "schema": "",
+      "columns": {
+        "node_id": {
+          "name": "node_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ts": {
+          "name": "ts",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counters": {
+          "name": "counters",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "node_live_node_id_nodes_id_fk": {
+          "name": "node_live_node_id_nodes_id_fk",
+          "tableFrom": "node_live",
+          "tableTo": "nodes",
+          "columnsFrom": [
+            "node_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.node_metrics": {
+      "name": "node_metrics",
+      "schema": "",
+      "columns": {
+        "node_id": {
+          "name": "node_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "res": {
+          "name": "res",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ts": {
+          "name": "ts",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dt": {
+          "name": "dt",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "n": {
+          "name": "n",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "rx_bytes": {
+          "name": "rx_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tx_bytes": {
+          "name": "tx_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cpu_avg": {
+          "name": "cpu_avg",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cpu_max": {
+          "name": "cpu_max",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mem_total": {
+          "name": "mem_total",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mem_avail_avg": {
+          "name": "mem_avail_avg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "load1_avg": {
+          "name": "load1_avg",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sessions_avg": {
+          "name": "sessions_avg",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "sessions_max": {
+          "name": "sessions_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "clients_avg": {
+          "name": "clients_avg",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clients_max": {
+          "name": "clients_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "node_metrics_node_id_nodes_id_fk": {
+          "name": "node_metrics_node_id_nodes_id_fk",
+          "tableFrom": "node_metrics",
+          "tableTo": "nodes",
+          "columnsFrom": [
+            "node_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "node_metrics_node_id_res_ts_pk": {
+          "name": "node_metrics_node_id_res_ts_pk",
+          "columns": [
+            "node_id",
+            "res",
+            "ts"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.nodes": {
+      "name": "nodes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "domain": {
+          "name": "domain",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hoster": {
+          "name": "hoster",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_demo": {
+          "name": "is_demo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "quota_tb": {
+          "name": "quota_tb",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "billing_day": {
+          "name": "billing_day",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "quota_counts": {
+          "name": "quota_counts",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'tx'"
+        },
+        "default_ip_limit_mbit": {
+          "name": "default_ip_limit_mbit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "key_hash": {
+          "name": "key_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "key_created_at": {
+          "name": "key_created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "key_revoked_at": {
+          "name": "key_revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enroll_token_hash": {
+          "name": "enroll_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enroll_expires_at": {
+          "name": "enroll_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_version": {
+          "name": "agent_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "protocol": {
+          "name": "protocol",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "haproxy_version": {
+          "name": "haproxy_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "haproxy_installed": {
+          "name": "haproxy_installed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hostname": {
+          "name": "hostname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os": {
+          "name": "os",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ops": {
+          "name": "ops",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "addrs": {
+          "name": "addrs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_remote_ip": {
+          "name": "last_remote_ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_connected_at": {
+          "name": "last_connected_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_disconnected_at": {
+          "name": "last_disconnected_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "nodes_key_hash_unique": {
+          "name": "nodes_key_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key_hash"
+          ]
+        },
+        "nodes_enroll_token_hash_unique": {
+          "name": "nodes_enroll_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "enroll_token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mfa_ok": {
+          "name": "mfa_ok",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sessions_user_idx": {
+          "name": "sessions_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sessions_user_id_users_id_fk": {
+          "name": "sessions_user_id_users_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "login": {
+          "name": "login",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'admin'"
+        },
+        "totp_secret_enc": {
+          "name": "totp_secret_enc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "totp_pending_enc": {
+          "name": "totp_pending_enc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "totp_enabled": {
+          "name": "totp_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "totp_last_step": {
+          "name": "totp_last_step",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failed_logins": {
+          "name": "failed_logins",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "locked_until": {
+          "name": "locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disabled": {
+          "name": "disabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_login_unique": {
+          "name": "users_login_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "login"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@popug/panel-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/server.ts",
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "cli": "tsx --env-file-if-exists=../../.env src/cli.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^10.1.10",
+    "@fastify/websocket": "^11.2.0",
+    "@node-rs/argon2": "^2.0.2",
+    "@popug/protocol": "*",
+    "drizzle-orm": "^0.45.0",
+    "fastify": "^5.6.0",
+    "otpauth": "^9.4.0",
+    "postgres": "^3.4.7",
+    "qrcode": "^1.5.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/ws": "^8.18.0",
+    "drizzle-kit": "^0.31.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0",
+    "ws": "^8.18.0"
+  }
+}

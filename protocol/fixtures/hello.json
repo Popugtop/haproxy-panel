@@ -1,0 +1,27 @@
+{
+  "t": "hello",
+  "protocol": 1,
+  "agentVersion": "0.1.0",
+  "hostname": "ru-bridge-1",
+  "os": "Debian GNU/Linux 12 (bookworm)",
+  "arch": "amd64",
+  "haproxy": {
+    "installed": true,
+    "running": true,
+    "version": "2.8.5"
+  },
+  "ops": [
+    "ping",
+    "get_config",
+    "apply_config",
+    "run_checks",
+    "apply_bans",
+    "get_clients",
+    "update_agent"
+  ],
+  "addrs": [
+    "203.0.113.21"
+  ],
+  "configSha256": "46532605479e500c60b4736968acd2b2523f167cd057346618c76d8c5b7dbed4",
+  "updateReady": true
+}

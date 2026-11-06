@@ -1,0 +1,17 @@
+{
+  "bad": [
+    "program shell\n    command /bin/sh\n",
+    "global\n    lua-load /tmp/x.lua\n",
+    "backend b\n    option external-check\n    external-check command /bin/sh\n",
+    "global\n\tSSL-ENGINE foo\n",
+    "global\n   setenv FOO bar\n",
+    "global\n  daemon\u0000\n",
+    "global\n    lua-prepend-path /tmp/?.lua\n"
+  ],
+  "ok": [
+    "# program shell — просто комментарий\nglobal\n    daemon\n",
+    "frontend fe\n    bind :443\n    default_backend be\nbackend be\n    server s 1.2.3.4:443 check\n",
+    "backend program_exit\n    server s 1.2.3.4:443\n",
+    "listen stats\n    bind 127.0.0.1:8404\n    mode http\n    stats enable\n"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "t": "result",
+  "id": "c-17",
+  "ok": true,
+  "error": null,
+  "data": {
+    "path": "/etc/haproxy/haproxy.cfg",
+    "content": "global\n    log /dev/log local0\n",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

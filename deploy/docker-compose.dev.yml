@@ -1,0 +1,18 @@
+# Только Postgres для локальной разработки (панель и фронт запускаются через npm).
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: popug
+      POSTGRES_PASSWORD: popug-dev
+      POSTGRES_DB: popug
+    ports: ['127.0.0.1:5433:5432']
+    volumes: [pgdata-dev:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U popug -d popug']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  pgdata-dev:

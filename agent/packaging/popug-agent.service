@@ -1,0 +1,25 @@
+[Unit]
+Description=PopugVPN bridge agent
+Documentation=https://github.com/popug/bridges
+After=network-online.target haproxy.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/popug-agent run
+Restart=always
+RestartSec=3
+# Агенту нужен root: доступ к stats-сокету HAProxy, а позже — nftables и запись /etc/haproxy.
+# Остальное режем, насколько можно, не ломая reload HAProxy через systemctl.
+User=root
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

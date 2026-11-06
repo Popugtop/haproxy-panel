@@ -1,0 +1,15 @@
+{
+  "t": "result",
+  "id": "c-18",
+  "ok": false,
+  "error": "haproxy отклонил конфиг",
+  "data": {
+    "version": 7,
+    "applied": false,
+    "rolledBack": true,
+    "rollbackFailed": false,
+    "sha256": "46532605479e500c60b4736968acd2b2523f167cd057346618c76d8c5b7dbed4",
+    "output": "[ALERT] parsing [/etc/haproxy/haproxy.cfg:12]: unknown keyword 'foo'",
+    "durationMs": 1520.5
+  }
+}

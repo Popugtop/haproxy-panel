@@ -1,0 +1,62 @@
+{
+  "t": "metrics",
+  "ts": 1793000000000,
+  "seq": 42,
+  "sys": {
+    "cpuPct": 12.5,
+    "load1": 0.31,
+    "load5": 0.22,
+    "load15": 0.18,
+    "memTotal": 2086989824,
+    "memAvail": 1523400704,
+    "uptimeSec": 864000,
+    "net": {
+      "rxBytes": 912345678901,
+      "txBytes": 934567890123,
+      "ifaces": [{ "name": "eth0", "rx": 912345678901, "tx": 934567890123 }]
+    }
+  },
+  "haproxy": {
+    "ok": true,
+    "error": null,
+    "version": "2.8.5",
+    "uptimeSec": 86400,
+    "backends": [
+      {
+        "name": "be_de",
+        "status": "UP",
+        "bin": 123456789,
+        "bout": 987654321,
+        "stot": 5120,
+        "scur": 37,
+        "servers": [{ "name": "de1", "status": "UP", "check": "L4OK", "checkMs": 3 }]
+      },
+      {
+        "name": "be_se",
+        "status": "DOWN",
+        "bin": 10,
+        "bout": 20,
+        "stot": 2,
+        "scur": 0,
+        "servers": [{ "name": "se1", "status": "DOWN", "check": "L4TOUT", "checkMs": null }]
+      }
+    ],
+    "frontends": [{ "name": "fe_sni", "scur": 37, "bin": 123456799, "bout": 987654341, "stot": 5122 }]
+  },
+  "clients": {
+    "tracked": 214,
+    "active": 61,
+    "top": [
+      {
+        "ip": "198.51.100.7",
+        "connCur": 4,
+        "connCnt": 311,
+        "bytesIn": 12345678,
+        "bytesOut": 765432109,
+        "rateIn": 52000.5,
+        "rateOut": 1250000
+      }
+    ]
+  },
+  "clientsError": null
+}

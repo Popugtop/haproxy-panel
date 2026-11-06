@@ -1,0 +1,51 @@
+# Запуск: cp .env.example .env && nano .env && docker compose up -d --build
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: popug
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env}
+      POSTGRES_DB: popug
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U popug -d popug']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  panel:
+    build:
+      context: ..
+      dockerfile: panel/Dockerfile
+      args:
+        VERSION: ${PANEL_VERSION:-0.1.0}
+      # Подпись агентов для обновления по кнопке: AGENT_SIGNING_KEY=/путь/к/release.key в .env (файл вне репозитория).
+      secrets: [agent_key]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://popug:${POSTGRES_PASSWORD}@postgres:5432/popug
+      APP_SECRET: ${APP_SECRET:?задайте APP_SECRET в .env (openssl rand -hex 32)}
+      PUBLIC_URL: ${PUBLIC_URL:?задайте PUBLIC_URL в .env (https://адрес панели)}
+      TRUST_PROXY: 'true'
+    ports:
+      # Наружу панель отдаёт Caddy. Порт слушает только localhost (или подключите панель к сети Caddy, см. Caddyfile.example).
+      - '127.0.0.1:${PANEL_PORT:-3000}:3000'
+    # Чтобы Caddy в соседнем compose-проекте видел панель по имени, раскомментируйте сеть:
+    # networks: [default, caddy]
+
+secrets:
+  agent_key:
+    file: ${AGENT_SIGNING_KEY:-/dev/null}
+
+volumes:
+  pgdata:
+
+# networks:
+#   caddy:
+#     external: true

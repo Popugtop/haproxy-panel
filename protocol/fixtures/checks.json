@@ -1,0 +1,20 @@
+{
+  "t": "checks",
+  "ts": 1793000000000,
+  "results": [
+    {
+      "routeId": "r1",
+      "exitId": "e1",
+      "ok": true,
+      "ms": 41.5,
+      "error": null
+    },
+    {
+      "routeId": "r1",
+      "exitId": "e2",
+      "ok": false,
+      "ms": null,
+      "error": "dial tcp 203.0.113.9:443: i/o timeout"
+    }
+  ]
+}
