@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -160,4 +161,47 @@ func (c *Client) Clients(ctx context.Context, topN int) (proto.Clients, error) {
 		return proto.Clients{}, fmt.Errorf("таблица %s: %v", c.Table, err)
 	}
 	return Summarize(rows, used, topN), nil
+}
+
+const (
+	maxMapBytes = 1_000_000
+	maxMapFiles = 8
+)
+
+// mapRefRe находит map(/путь/к/файлу[,значение_по_умолчанию]) и map_str/map_beg/… в тексте конфига.
+var mapRefRe = regexp.MustCompile(`\bmap(?:_[a-z]+)?\(\s*([^),\s]+)`)
+
+// ReadReferencedMaps читает карты, упомянутые в конфиге, для импорта SNI-маршрутов.
+//
+// Безопасность: путь берётся из текста конфига на самой ноде, но панель могла положить в конфиг что угодно,
+// поэтому читается только обычный файл *.map, который после раскрытия символических ссылок остаётся внутри
+// каталога конфига (обычно /etc/haproxy). Размер и число файлов ограничены. Остальное молча пропускается.
+func ReadReferencedMaps(cfgPath, cfgText string) []proto.ConfigMap {
+	base, err := filepath.EvalSymlinks(filepath.Dir(cfgPath))
+	if err != nil {
+		return nil
+	}
+	var out []proto.ConfigMap
+	seen := map[string]bool{}
+	for _, m := range mapRefRe.FindAllStringSubmatch(cfgText, -1) {
+		raw := m[1]
+		if seen[raw] || len(out) >= maxMapFiles || !filepath.IsAbs(raw) || !strings.HasSuffix(raw, ".map") {
+			continue
+		}
+		seen[raw] = true
+		real, err := filepath.EvalSymlinks(filepath.Clean(raw))
+		if err != nil || !strings.HasPrefix(real, base+string(filepath.Separator)) {
+			continue
+		}
+		st, err := os.Stat(real)
+		if err != nil || !st.Mode().IsRegular() || st.Size() > maxMapBytes {
+			continue
+		}
+		b, err := os.ReadFile(real)
+		if err != nil {
+			continue
+		}
+		out = append(out, proto.ConfigMap{Path: raw, Content: string(b)})
+	}
+	return out
 }

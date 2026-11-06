@@ -115,4 +115,7 @@ func TestFixtures(t *testing.T) {
 	if !r.OK || r.Data.Path != "/etc/haproxy/haproxy.cfg" {
 		t.Fatalf("result: %+v", r)
 	}
+	if len(r.Data.Maps) != 1 || r.Data.Maps[0].Path != "/etc/haproxy/sni.map" || r.Data.Maps[0].Content != "de.example.com be_de\n" {
+		t.Fatalf("maps: %+v", r.Data.Maps)
+	}
 }

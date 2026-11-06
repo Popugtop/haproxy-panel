@@ -261,6 +261,8 @@ export const ConfigDataSchema = z.object({
   path: z.string(),
   content: z.string().max(2_000_000),
   sha256: z.string().length(64),
+  /** Карты (*.map), на которые ссылается конфиг через map(...). У старых агентов поля нет. */
+  maps: z.array(z.object({ path: z.string().max(512), content: z.string().max(1_000_000) })).max(8).default([]),
 });
 export type ConfigData = z.infer<typeof ConfigDataSchema>;
 

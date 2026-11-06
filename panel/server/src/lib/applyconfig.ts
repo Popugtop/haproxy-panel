@@ -99,7 +99,7 @@ async function fetchNodeConfig(ctx: Ctx, nodeId: string) {
 
 export async function previewImport(ctx: Ctx, node: NodeRow): Promise<ImportPreviewDto> {
   const cfg = await fetchNodeConfig(ctx, node.id);
-  const preview = parseHandConfig(cfg.content);
+  const preview = parseHandConfig(cfg.content, cfg.maps);
   const all = await loadRoutes(ctx.db);
   const exits = await ctx.db.select().from(schema.exits);
   const matches: ImportPreviewDto['matches'] = {};

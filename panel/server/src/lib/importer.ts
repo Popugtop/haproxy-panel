@@ -1,6 +1,7 @@
 /**
  * Разбор «ручного» haproxy.cfg: достаёт SNI-маршруты (`use_backend … if { req_ssl_sni -i … }`, в том числе через
- * именованные acl) и server-строки бэкендов. Ничего не меняет на ноде — результат показывается как предпросмотр.
+ * именованные acl, и через map-файл: `use_backend %[req.ssl_sni,lower,map(/etc/haproxy/sni.map)]`) и server-строки бэкендов.
+ * Ничего не меняет на ноде — результат показывается как предпросмотр.
  */
 import { isIP } from 'node:net';
 import { isCountryCode } from '@popug/protocol/countries';
@@ -91,7 +92,27 @@ function parseServer(tokens: string[]): { exit: ImportedExit; check: boolean; pr
   return { exit: { serverName: name, host, port }, check: opts.includes('check'), proxy };
 }
 
-export function parseHandConfig(cfg: string): ImportPreview {
+export interface ConfigMapFile {
+  path: string;
+  content: string;
+}
+
+/** Содержимое map-файла: «ключ значение» построчно, комментарии с «#». Ключи приводятся к нижнему регистру. */
+export function parseMapFile(content: string): [string, string][] {
+  const out: [string, string][] = [];
+  for (const raw of content.split(/\r?\n/)) {
+    const line = raw.replace(/(^|\s)#.*$/, '').trim();
+    if (!line) continue;
+    const [key, value] = line.split(/\s+/);
+    if (key && value) out.push([key.toLowerCase(), value]);
+  }
+  return out;
+}
+
+/** use_backend %[req.ssl_sni,lower,map(путь[,значение_по_умолчанию])] [if …]. */
+const DYNAMIC_USE_BACKEND = /^use_backend\s+%\[\s*(?:req\.ssl_sni|req_ssl_sni|ssl_fc_sni)\s*(?:,\s*lower\s*)?,\s*(map(?:_[a-z]+)?)\(\s*([^),\s]+)\s*(?:,\s*([^)\s]+))?\s*\)\s*\](?:\s+(if|unless)\s+(.+))?$/;
+
+export function parseHandConfig(cfg: string, maps: ConfigMapFile[] = []): ImportPreview {
   const sections = splitSections(cfg);
   const warnings: string[] = [];
   const preview: ImportPreview = { routes: [], defaultBackend: null, warnings, ignoredSections: [] };
@@ -139,7 +160,31 @@ export function parseHandConfig(cfg: string): ImportPreview {
       if (t[0] !== 'use_backend' || !t[1]) continue;
       const target = t[1];
       if (target.startsWith('%[')) {
-        warnings.push(`${s.name}: use_backend с динамическим именем (${target.slice(0, 60)}…) — SNI из map-файла панель прочитать не может, задайте SNI маршрутов вручную`);
+        const dyn = l.match(DYNAMIC_USE_BACKEND);
+        if (!dyn) {
+          warnings.push(`${s.name}: use_backend с динамическим именем (${target.slice(0, 60)}…) разобрать не удалось — задайте SNI маршрутов вручную`);
+          continue;
+        }
+        const [, fn, mapPath, mapDefault, , condText] = dyn;
+        const file = maps.find((m) => m.path === mapPath);
+        if (!file) {
+          warnings.push(`${s.name}: SNI лежат в карте ${mapPath}, но агент её не прислал (агент устарел — обновите его командой установки без токена, либо файл не .map или лежит вне каталога конфига) — задайте SNI маршрутов вручную`);
+          continue;
+        }
+        if (fn !== 'map' && fn !== 'map_str') warnings.push(`${s.name}: ${fn}(${mapPath}) — в панели только точное совпадение SNI, значения карты импортированы как точные`);
+        if (condText) warnings.push(`${s.name}: у use_backend по карте ${mapPath} есть условие «${condText.slice(0, 60)}» — оно не учтено, проверьте маршруты`);
+        const entries = parseMapFile(file.content);
+        if (entries.length === 0) warnings.push(`карта ${mapPath} пуста или не разобрана`);
+        for (const [sni, backend] of entries) {
+          referenced.add(backend);
+          const set = bySni.get(backend) ?? new Set<string>();
+          set.add(sni);
+          bySni.set(backend, set);
+        }
+        if (mapDefault && !preview.defaultBackend) {
+          preview.defaultBackend = mapDefault;
+          referenced.add(mapDefault);
+        }
         continue;
       }
       referenced.add(target);

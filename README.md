@@ -149,7 +149,9 @@ docker compose exec panel node panel/server/dist/cli.js create-admin popug
 
 ### 4. Настройте HTTPS
 
-Панель слушает только `127.0.0.1:3000`. Наружу её отдаёт reverse-proxy. Для Caddy достаточно:
+Панель слушает только `127.0.0.1:3000` **на хосте**, наружу её отдаёт reverse-proxy. Как указать адрес, зависит от того, где работает Caddy.
+
+**Caddy установлен на хосте** (не в Docker):
 
 ```caddyfile
 panel.example.com {
@@ -162,7 +164,40 @@ panel.example.com {
 }
 ```
 
+**Caddy запущен в Docker** (частый случай). Внутри контейнера `127.0.0.1` — это сам Caddy, поэтому до панели такой адрес не дотянется: браузер покажет **белую страницу** (Caddy отвечает пустым 502), а в логах панели не будет ни одного запроса. Подключите панель к сети Caddy и обращайтесь по имени:
+
+1. Узнайте, к какой сети подключён Caddy: `docker inspect caddy --format '{{json .NetworkSettings.Networks}}'` (у Caddy из compose-проекта Remnawave это обычно `remnawave-network`, а не `caddy_default`).
+2. В `deploy/docker-compose.yml` раскомментируйте сети у сервиса `panel` и внешнюю сеть внизу, подставив это имя. Псевдоним `popug-panel` нужен, чтобы имя не совпало с чужим контейнером в этой сети; сеть `default` нужна для связи с Postgres:
+
+```yaml
+    networks:
+      default: {}
+      remnawave-network:          # имя сети Caddy
+        aliases: [popug-panel]
+
+networks:
+  remnawave-network:
+    external: true
+```
+
+3. В Caddyfile используйте псевдоним:
+
+```caddyfile
+panel.example.com {
+	encode zstd gzip
+	reverse_proxy popug-panel:3000 {
+		transport http {
+			read_timeout 0
+		}
+	}
+}
+```
+
+4. Примените: `docker compose up -d` (в `deploy/`) и `docker exec caddy caddy reload --config /etc/caddy/Caddyfile` (или `docker restart caddy`).
+
 Caddy сам выпустит сертификат. Если у вас nginx, не забудьте `proxy_http_version 1.1`, заголовки `Upgrade`/`Connection` и большой `proxy_read_timeout` для `/ws/agent`.
+
+Проверка: `curl -s http://127.0.0.1:3000/api/health` на хосте должен вернуть `{"ok":true,…}`, а `curl -I https://panel.example.com` — `200`.
 
 ### 5. Войдите
 
@@ -493,7 +528,7 @@ docker compose exec panel node panel/server/dist/cli.js <команда>
 
 | Симптом | Причина и решение |
 |---|---|
-| `Ошибка 502` на входе | Контейнер `panel` не запущен: `docker compose logs panel`. Чаще всего неверный `.env` или не поднялся Postgres. |
+| Белая страница или `502` на входе | Если Caddy в Docker и в Caddyfile `127.0.0.1:3000`, он не видит панель: подключите панель к сети Caddy и используйте `popug-panel:3000` (см. установку, шаг 4). Если `curl http://127.0.0.1:3000/api/health` на хосте не отвечает, контейнер `panel` не запущен: `docker compose logs panel` (чаще всего неверный `.env` или не поднялся Postgres). |
 | Панель не стартует: `DEMO=1 запрещён…` | Уберите `DEMO` из окружения production. |
 | `PUBLIC_URL обязателен` | Задайте адрес панели в `.env`. |
 | Не принимает код TOTP | Проверьте время на телефоне и сервере (допуск ±30 с). Код нельзя использовать повторно: дождитесь следующего. Потеряли аутентификатор — `reset-totp`. |

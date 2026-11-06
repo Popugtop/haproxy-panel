@@ -45,7 +45,7 @@
 .page-title { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .crumbs { margin-bottom: 6px; }
 .section-title { margin: 28px 0 10px; display: flex; align-items: center; gap: 8px; }
-.stack { display: grid; gap: 16px; }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; } /* minmax(0,…): длинное содержимое не должно растягивать колонку шире контейнера */
 
 /* ───── карточки обзора ───── */
 .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
@@ -100,7 +100,7 @@ pre.config { margin: 0; padding: 14px 16px; overflow: auto; max-height: 560px; f
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }
 .form-grid .wide { grid-column: 1 / -1; }
 .copybox { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border: 1px solid var(--g-color-line-generic); border-radius: 8px; background: var(--g-color-base-generic); }
-.copybox code { flex: 1; overflow-x: auto; white-space: nowrap; font-family: var(--g-font-family-monospace); font-size: 12.5px; padding: 4px 0; }
+.copybox code { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-all; font-family: var(--g-font-family-monospace); font-size: 12.5px; padding: 4px 0; }
 
 @media (max-width: 1100px) {
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }

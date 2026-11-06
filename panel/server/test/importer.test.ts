@@ -115,7 +115,14 @@ describe('импорт ручного конфига', () => {
   it('map-файл вместо use_backend if: предупреждение, а не молчаливая потеря', () => {
     const r = parseHandConfig(`frontend fe\n    bind :443\n    use_backend %[req.ssl_sni,lower,map(/etc/haproxy/maps/sni.map)]\nbackend be_de\n    server de1 1.2.3.4:443\n`);
     expect(r.routes).toEqual([]);
-    expect(r.warnings.join()).toMatch(/map-файла/);
+    expect(r.warnings.join()).toMatch(/агент её не прислал/);
+  });
+
+  it('читает SNI из map-файла, который прислал агент', () => {
+    const cfg = `frontend fe\n    bind :443\n    use_backend %[req.ssl_sni,lower,map(/etc/haproxy/sni.map,be_de)]\nbackend be_de\n    server de1 1.2.3.4:443 check\nbackend be_ee01\n    server e1 5.6.7.8:443 send-proxy-v2\n`;
+    const r = parseHandConfig(cfg, [{ path: '/etc/haproxy/sni.map', content: '# комментарий\nDE.example.com be_de\nee.example.com be_ee01\nwww.ee.example.com be_ee01\n' }]);
+    expect(r.routes.map((x) => [x.slug, x.snis, x.proxyProtocol])).toEqual([['de', ['de.example.com'], false], ['ee01', ['ee.example.com', 'www.ee.example.com'], true]]);
+    expect(r.defaultBackend).toBe('be_de');
   });
 
   it('пустой и мусорный ввод не падает', () => {

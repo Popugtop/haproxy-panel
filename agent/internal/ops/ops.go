@@ -73,7 +73,7 @@ func (d *Dispatcher) getConfig(context.Context, proto.Cmd) (any, error) {
 		return nil, fmt.Errorf("не удалось прочитать %s: %w", d.HAProxyConfig, err)
 	}
 	sum := sha256.Sum256(b)
-	return proto.ConfigData{Path: d.HAProxyConfig, Content: string(b), SHA256: hex.EncodeToString(sum[:])}, nil
+	return proto.ConfigData{Path: d.HAProxyConfig, Content: string(b), SHA256: hex.EncodeToString(sum[:]), Maps: haproxy.ReadReferencedMaps(d.HAProxyConfig, string(b))}, nil
 }
 
 func truncate(s string, n int) string {

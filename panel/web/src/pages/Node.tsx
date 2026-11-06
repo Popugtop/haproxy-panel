@@ -133,7 +133,7 @@ function OverviewTab({ d }: { d: NodeDetail }) {
         </Notice>
       )}
       {live?.clientsError && live.haproxy.ok && (
-        <Notice theme="warning">Топ клиентов недоступен: {live.clientsError}. Нужен бэкенд <span className="mono">st_clients</span> со stick-table и <span className="mono">track-sc2 src table st_clients</span> в SNI-фронтенде.</Notice>
+        <Notice theme="warning">Топ клиентов недоступен: {live.clientsError}. Нужен бэкенд <span className="mono">st_clients</span> со stick-table и <span className="mono">track-sc2 src table st_clients</span> в SNI-фронтенде. Панель добавляет их сама при первом применении конфига: откройте вкладку «Конфиг», при необходимости сначала импортируйте существующие маршруты.</Notice>
       )}
 
       <div className="split">

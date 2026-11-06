@@ -143,6 +143,14 @@ type ConfigData struct {
 	Path    string `json:"path"`
 	Content string `json:"content"`
 	SHA256  string `json:"sha256"`
+	// Maps — файлы карт (*.map), на которые ссылается конфиг через map(...). Нужны панели, чтобы импортировать SNI-маршруты,
+	// записанные в карте. Агент отдаёт только файлы внутри каталога конфига.
+	Maps []ConfigMap `json:"maps,omitempty"`
+}
+
+type ConfigMap struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
 }
 
 // Проверки «агент → выход».

@@ -34,7 +34,13 @@ describe('фикстуры протокола', () => {
   });
 
   it('данные get_config и ответ enroll валидны', () => {
-    expect(ConfigDataSchema.safeParse(fx('result_get_config.json').data).success).toBe(true);
+    const cfg = ConfigDataSchema.safeParse(fx('result_get_config.json').data);
+    expect(cfg.success).toBe(true);
+    expect(cfg.success && cfg.data.maps).toEqual([{ path: '/etc/haproxy/sni.map', content: 'de.example.com be_de\n' }]);
+    // агент без поддержки карт не присылает поле: оно становится пустым списком
+    const { maps: _maps, ...old } = fx('result_get_config.json').data;
+    const legacy = ConfigDataSchema.safeParse(old);
+    expect(legacy.success && legacy.data.maps).toEqual([]);
     expect(EnrollResponseSchema.safeParse(fx('enroll_response.json')).success).toBe(true);
   });
 

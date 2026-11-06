@@ -36,8 +36,13 @@ services:
     ports:
       # Наружу панель отдаёт Caddy. Порт слушает только localhost (или подключите панель к сети Caddy, см. Caddyfile.example).
       - '127.0.0.1:${PANEL_PORT:-3000}:3000'
-    # Чтобы Caddy в соседнем compose-проекте видел панель по имени, раскомментируйте сеть:
-    # networks: [default, caddy]
+    # Caddy в Docker (в другом compose-проекте) видит панель только через общую сеть. Раскомментируйте и укажите имя
+    # сети, к которой подключён Caddy (docker inspect caddy), а в Caddyfile пишите reverse_proxy popug-panel:3000.
+    # Сеть default нужна для связи с postgres, не убирайте её.
+    # networks:
+    #   default: {}
+    #   caddy:
+    #     aliases: [popug-panel]
 
 secrets:
   agent_key:

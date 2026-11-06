@@ -6,6 +6,12 @@
   "data": {
     "path": "/etc/haproxy/haproxy.cfg",
     "content": "global\n    log /dev/log local0\n",
-    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "maps": [
+      {
+        "path": "/etc/haproxy/sni.map",
+        "content": "de.example.com be_de\n"
+      }
+    ]
   }
 }
