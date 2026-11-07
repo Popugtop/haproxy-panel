@@ -30,6 +30,8 @@ export interface RemnaSettings {
   observeOnly: boolean;
   /** report — срок из отчёта Remnawave (blockDuration), fixed — всегда свой срок. */
   banMode: 'report' | 'fixed';
+  /** Где банить: route — только на мостах, у которых есть маршрут на выход этой ноды Remnawave; all — на всех мостах. */
+  scope: 'route' | 'all';
   fixedBanSec: number;
   /** Предохранитель: дольше этого не банить, даже если в отчёте больше. */
   maxBanSec: number;
@@ -45,6 +47,7 @@ export const REMNA_DEFAULTS: RemnaSettings = {
   headersEnc: null,
   observeOnly: true,
   banMode: 'report',
+  scope: 'route',
   fixedBanSec: 3600,
   maxBanSec: 86400,
   pollIntervalSec: 15,
@@ -84,6 +87,7 @@ export function remnaPublic(s: RemnaSettings, appSecret: string) {
     headerNames,
     observeOnly: s.observeOnly,
     banMode: s.banMode,
+    scope: s.scope,
     fixedBanSec: s.fixedBanSec,
     maxBanSec: s.maxBanSec,
     pollIntervalSec: s.pollIntervalSec,

@@ -454,6 +454,7 @@ export interface RemnaSettingsDto {
   headerNames: string[];
   observeOnly: boolean;
   banMode: 'report' | 'fixed';
+  scope: 'route' | 'all';
   fixedBanSec: number;
   maxBanSec: number;
   pollIntervalSec: number;

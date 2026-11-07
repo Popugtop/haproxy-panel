@@ -1,7 +1,8 @@
 import { COUNTRIES, flag } from '@popug/protocol/countries';
 import { Dialog, Select, TextInput } from '@gravity-ui/uikit';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useOnOpen } from '../lib/useOnOpen';
 import { api, ApiError, type ExitDto } from '../lib/api';
 import { Field, Notice } from './ui';
 
@@ -16,13 +17,12 @@ export function ExitDialog({ open, onClose, exit, onSaved }: { open: boolean; on
   const [host, setHost] = useState('');
   const [port, setPort] = useState('443');
 
-  useEffect(() => {
-    if (!open) return;
+  useOnOpen(open, () => {
     setName(exit?.name ?? '');
     setCountry(exit?.country ? [exit.country] : []);
     setHost(exit?.host ?? '');
     setPort(String(exit?.port ?? 443));
-  }, [open, exit]);
+  });
 
   const save = useMutation({
     mutationFn: () => {

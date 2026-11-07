@@ -40,6 +40,7 @@ function RemnawaveCard() {
   const [headersTouched, setHeadersTouched] = useState(false);
   const [observeOnly, setObserveOnly] = useState(true);
   const [banMode, setBanMode] = useState<'report' | 'fixed'>('report');
+  const [scope, setScope] = useState<'route' | 'all'>('route');
   const [fixedH, setFixedH] = useState('1');
   const [maxH, setMaxH] = useState('24');
   const [poll, setPoll] = useState('15');
@@ -52,6 +53,7 @@ function RemnawaveCard() {
     setUrl(d.url);
     setObserveOnly(d.observeOnly);
     setBanMode(d.banMode);
+    setScope(d.scope);
     setFixedH(hours(d.fixedBanSec));
     setMaxH(hours(d.maxBanSec));
     setPoll(String(d.pollIntervalSec));
@@ -67,7 +69,7 @@ function RemnawaveCard() {
     if (!(f > 0) || !(m > 0)) return setFormError('Сроки банов: число часов больше нуля'), null;
     if (!Number.isInteger(p) || p < 5) return setFormError('Интервал опроса: целое число секунд, не меньше 5'), null;
     const payload: RemnaSavePayload = {
-      enabled, url: url.trim(), observeOnly, banMode, fixedBanSec: Math.round(f * 3600), maxBanSec: Math.round(m * 3600), pollIntervalSec: p,
+      enabled, url: url.trim(), observeOnly, banMode, scope, fixedBanSec: Math.round(f * 3600), maxBanSec: Math.round(m * 3600), pollIntervalSec: p,
       allowlist: allow.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean),
     };
     if (token.trim()) payload.token = token.trim();
@@ -141,6 +143,9 @@ function RemnawaveCard() {
 
         <Text variant="subheader-2">Баны</Text>
         <Switch checked={observeOnly} onUpdate={setObserveOnly} content="Режим наблюдения: записывать решения, но не банить" />
+        <Field label="Где банить" help="По умолчанию — только на мостах, у которых есть маршрут на выход этой ноды Remnawave: если клиент сидел на Турции, а мостов на Турцию нет, банить некого. Чтобы выход панели сопоставился с нодой Remnawave, их адреса должны совпадать.">
+          <SegmentedRadioGroup value={scope} onUpdate={setScope} options={[{ value: 'route', content: 'Только нужные мосты' }, { value: 'all', content: 'На всех мостах' }]} />
+        </Field>
         <Field label="Срок бана" help="По умолчанию берётся срок из отчёта Remnawave (blockDuration), но не больше максимума ниже.">
           <SegmentedRadioGroup value={banMode} onUpdate={setBanMode} options={[{ value: 'report', content: 'Как в отчёте' }, { value: 'fixed', content: 'Всегда одинаковый' }]} />
         </Field>

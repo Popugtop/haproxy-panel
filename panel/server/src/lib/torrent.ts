@@ -25,9 +25,11 @@ export interface TorrentState {
   /** IP нод Remnawave: их баном можно отрезать собственную инфраструктуру. */
   allowIps: string[];
   allowAt: string | null;
+  /** Ноды Remnawave с адресами: по ним определяем, какие мосты ведут на выход, где поймали торрент. */
+  remnaNodes: { uuid: string; name: string; hosts: string[] }[];
 }
 
-const STATE_DEFAULTS: TorrentState = { initialized: false, cursor: 0, lastPollAt: null, lastOkAt: null, lastError: null, warning: null, allowIps: [], allowAt: null };
+const STATE_DEFAULTS: TorrentState = { initialized: false, cursor: 0, lastPollAt: null, lastOkAt: null, lastError: null, warning: null, allowIps: [], allowAt: null, remnaNodes: [] };
 export const TORRENT_ACTIONS = ['ban', 'observe', 'skip', 'already_banned', 'error'] as const;
 export type TorrentAction = (typeof TORRENT_ACTIONS)[number];
 
@@ -65,7 +67,9 @@ export async function pollOnce(ctx: Ctx, now = new Date()): Promise<PollResult> 
     st.warning = null;
     if (!st.allowAt || now.getTime() - new Date(st.allowAt).getTime() > ALLOW_REFRESH_MS) {
       try {
-        st.allowIps = await collectRemnaIps(client);
+        const c = await collectRemna(client);
+        st.allowIps = c.ips;
+        st.remnaNodes = c.nodes;
         st.allowAt = now.toISOString();
       } catch (e) {
         st.warning = `Не удалось получить список нод Remnawave (${(e as Error).message}). Баны продолжаются, защищены адреса нод и выходов панели.`;
@@ -110,20 +114,27 @@ export async function pollOnce(ctx: Ctx, now = new Date()): Promise<PollResult> 
   }
 }
 
-async function collectRemnaIps(client: RemnaClient): Promise<string[]> {
+async function collectRemna(client: RemnaClient): Promise<{ ips: string[]; nodes: TorrentState['remnaNodes'] }> {
   const out = new Set<string>();
+  const nodes: TorrentState['remnaNodes'] = [];
   for (const n of await client.nodes()) {
+    const hosts = new Set<string>(n.ips.map((i) => i.toLowerCase()));
     for (const ip of n.ips) out.add(ip);
+    if (n.address) hosts.add(n.address.toLowerCase());
     if (isIP(n.address)) out.add(n.address);
     else if (n.address) {
       try {
-        for (const a of await lookup(n.address, { all: true })) out.add(a.address);
+        for (const a of await lookup(n.address, { all: true })) {
+          out.add(a.address);
+          hosts.add(a.address.toLowerCase());
+        }
       } catch {
         /* имя не разрешилось: остальных адресов хватает */
       }
     }
+    nodes.push({ uuid: n.uuid, name: n.name, hosts: [...hosts] });
   }
-  return [...out];
+  return { ips: [...out], nodes };
 }
 
 interface Env {
@@ -132,11 +143,12 @@ interface Env {
   remnaIps: Set<string>;
   manual: (ip: string) => boolean;
   nodeIds: string[];
+  remnaNodes: TorrentState['remnaNodes'];
 }
 
 async function makeEnv(ctx: Ctx, s: RemnaSettings, st: TorrentState, now: Date): Promise<Env> {
   const nodes = await ctx.db.select({ id: schema.nodes.id }).from(schema.nodes).where(isNull(schema.nodes.keyRevokedAt));
-  return { now, infra: await infraIps(ctx.db), remnaIps: new Set(st.allowIps), manual: allowlistMatcher(s.allowlist), nodeIds: nodes.map((n) => n.id) };
+  return { now, infra: await infraIps(ctx.db), remnaIps: new Set(st.allowIps), manual: allowlistMatcher(s.allowlist), nodeIds: nodes.map((n) => n.id), remnaNodes: st.remnaNodes ?? [] };
 }
 
 export interface Decision {
@@ -163,6 +175,22 @@ export function decide(s: RemnaSettings, r: TorrentReport, env: Pick<Env, 'now' 
   return { ip, durationSec: Math.max(60, Math.min(Math.floor(wanted), s.maxBanSec)) };
 }
 
+/** Мосты, у которых есть включённый маршрут на выход, соответствующий ноде Remnawave из отчёта. */
+async function bridgesFor(db: DB, r: TorrentReport, remnaNodes: TorrentState['remnaNodes']): Promise<{ nodeIds: Set<string> } | { skip: string }> {
+  const rn = remnaNodes.find((n) => (r.nodeUuid && n.uuid === r.nodeUuid) || n.name.toLowerCase() === r.nodeName.toLowerCase());
+  if (!rn) return { skip: `ноды Remnawave «${r.nodeName}» нет в списке нод (проверьте право nodes:list у токена) — не знаю, на какие мосты банить; можно выбрать «на всех мостах» в настройках` };
+  const hosts = new Set(rn.hosts);
+  const exits = (await db.select({ id: schema.exits.id, host: schema.exits.host }).from(schema.exits)).filter((e) => hosts.has(e.host.toLowerCase()));
+  if (exits.length === 0) return { skip: `ни один выход панели не совпадает с нодой Remnawave «${rn.name}»: мосты на неё не ведут` };
+  const rows = await db
+    .selectDistinct({ nodeId: schema.routeNodes.nodeId })
+    .from(schema.routeExits)
+    .innerJoin(schema.routes, eq(schema.routes.id, schema.routeExits.routeId))
+    .innerJoin(schema.routeNodes, eq(schema.routeNodes.routeId, schema.routeExits.routeId))
+    .where(and(inArray(schema.routeExits.exitId, exits.map((e) => e.id)), eq(schema.routes.enabled, true)));
+  return { nodeIds: new Set(rows.map((x) => x.nodeId)) };
+}
+
 async function handleReport(ctx: Ctx, s: RemnaSettings, r: TorrentReport, env: Env): Promise<Decision> {
   const { db } = ctx;
   const record = async (d: Decision, ip = r.ip) => {
@@ -178,7 +206,14 @@ async function handleReport(ctx: Ctx, s: RemnaSettings, r: TorrentReport, env: E
     .from(schema.bans)
     .where(and(eq(schema.bans.ip, dec.ip), gt(schema.bans.expiresAt, env.now)));
   const have = new Set(active.map((a) => a.nodeId));
-  const targets = env.nodeIds.filter((id) => !have.has(id));
+  let scope = env.nodeIds;
+  if (s.scope === 'route') {
+    const found = await bridgesFor(db, r, env.remnaNodes);
+    if ('skip' in found) return record({ action: 'skip', reason: found.skip, durationSec: null, nodesCount: 0 }, dec.ip);
+    scope = env.nodeIds.filter((id) => found.nodeIds.has(id));
+    if (scope.length === 0) return record({ action: 'skip', reason: `на выход ноды Remnawave «${r.nodeName}» не ведёт ни один маршрут ваших мостов`, durationSec: null, nodesCount: 0 }, dec.ip);
+  }
+  const targets = scope.filter((id) => !have.has(id));
   if (targets.length === 0) return record({ action: 'already_banned', reason: 'бан уже действует', durationSec: null, nodesCount: 0 }, dec.ip);
   if (s.observeOnly) return record({ action: 'observe', reason: 'режим наблюдения: бан не ставится', durationSec: dec.durationSec, nodesCount: targets.length }, dec.ip);
 

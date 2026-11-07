@@ -1,6 +1,7 @@
 import { Button, Checkbox, Dialog, Select, Text, TextInput } from '@gravity-ui/uikit';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useOnOpen } from '../lib/useOnOpen';
 import { api, ApiError, type BanOutcome } from '../lib/api';
 import { useNodes } from '../lib/queries';
 import { ApplyDialog } from './ApplyDialog';
@@ -43,14 +44,13 @@ export function BanDialog({ open, onClose, ip: fixedIp, nodeIds: preset, duratio
   const [note, setNote] = useState('');
   const [result, setResult] = useState<BanOutcome[] | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
+  useOnOpen(open, () => {
     setIp(fixedIp ?? '');
     setDur(String(durationSec ?? 86400));
     setSel(preset ?? []);
     setNote('');
     setResult(null);
-  }, [open, fixedIp, preset, durationSec]);
+  });
 
   const list = nodes.data?.nodes ?? [];
   const save = useMutation({
@@ -115,14 +115,13 @@ export function LimitDialog({ open, onClose, ip: fixedIp, nodeIds: preset, mbit:
   const [saved, setSaved] = useState<{ id: string; name: string }[] | null>(null);
   const [applyFor, setApplyFor] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
+  useOnOpen(open, () => {
     setIp(fixedIp ?? '');
     setMbit(String(presetMbit ?? 10));
     setSel(preset ?? []);
     setNote('');
     setSaved(null);
-  }, [open, fixedIp, preset, presetMbit]);
+  });
 
   const list = nodes.data?.nodes ?? [];
   const save = useMutation({

@@ -21,6 +21,7 @@ const RemnaBody = z.object({
   headers: z.record(z.string(), z.string().max(1000)).optional(),
   observeOnly: z.boolean(),
   banMode: z.enum(['report', 'fixed']),
+  scope: z.enum(['route', 'all']).default('route'),
   fixedBanSec: z.number().int(),
   maxBanSec: z.number().int(),
   pollIntervalSec: z.number().int().min(5, 'Интервал опроса: не чаще раза в 5 секунд').max(3600),
@@ -77,6 +78,7 @@ export function integrationRoutes(app: FastifyInstance, ctx: Ctx): void {
     }
     next.observeOnly = b.observeOnly;
     next.banMode = b.banMode;
+    next.scope = b.scope;
     secs(b.fixedBanSec, 'Фиксированный срок бана');
     secs(b.maxBanSec, 'Максимальный срок бана');
     next.fixedBanSec = b.fixedBanSec;
@@ -94,7 +96,7 @@ export function integrationRoutes(app: FastifyInstance, ctx: Ctx): void {
       actorOf(req),
       'settings.remnawave',
       undefined,
-      { enabled: next.enabled, url: next.url, tokenChanged: !!b.token || !!b.clearToken, headersChanged: b.headers !== undefined, observeOnly: next.observeOnly, banMode: next.banMode, fixedBanSec: next.fixedBanSec, maxBanSec: next.maxBanSec, pollIntervalSec: next.pollIntervalSec, allowlist: next.allowlist },
+      { enabled: next.enabled, url: next.url, tokenChanged: !!b.token || !!b.clearToken, headersChanged: b.headers !== undefined, observeOnly: next.observeOnly, banMode: next.banMode, scope: next.scope, fixedBanSec: next.fixedBanSec, maxBanSec: next.maxBanSec, pollIntervalSec: next.pollIntervalSec, allowlist: next.allowlist },
       req.ip,
     );
     return remnaPublic(next, config.APP_SECRET);

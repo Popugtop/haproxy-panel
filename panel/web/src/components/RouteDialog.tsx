@@ -1,9 +1,10 @@
 import { flag, routeNameFor } from '@popug/protocol/countries';
 import { Button, Dialog, Label, Select, Switch, Text, TextArea, TextInput } from '@gravity-ui/uikit';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { api, ApiError, type ExitDto, type RouteDto, type RouteInput } from '../lib/api';
 import { useExits, useNodes, useRoutes } from '../lib/queries';
+import { useOnOpen } from '../lib/useOnOpen';
 import { ApplyDialog } from './ApplyDialog';
 import { ExitDialog } from './ExitDialog';
 import { Field, Notice } from './ui';
@@ -31,7 +32,7 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   const [snis, setSnis] = useState('');
   const [exitIds, setExitIds] = useState<string[]>([]);
   const [nodeIds, setNodeIds] = useState<string[]>([]);
-  const [proxy, setProxy] = useState(false);
+  const [proxy, setProxy] = useState(true);
   const [health, setHealth] = useState(true);
   const [enabled, setEnabled] = useState(true);
   const [limit, setLimit] = useState('');
@@ -41,21 +42,20 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   const [saved, setSaved] = useState<RouteDto | null>(null);
   const [applyNode, setApplyNode] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
+  useOnOpen(open, () => {
     setSaved(null);
     setName(route?.name ?? '');
     setSlug(route?.slug ?? '');
     setSnis(route?.snis.join('\n') ?? '');
     setExitIds(route?.exits.map((e) => e.id) ?? []);
     setNodeIds(route?.nodeIds ?? presetNodeIds ?? []);
-    setProxy(route?.proxyProtocol ?? false);
+    setProxy(route?.proxyProtocol ?? true);
     setHealth(route?.healthCheck ?? true);
     setEnabled(route?.enabled ?? true);
     setLimit(route?.limitMbit ? String(route.limitMbit) : '');
     setIpLimit(route?.ipLimitMbit ? String(route.ipLimitMbit) : '');
     setTouched({ name: !!route, slug: !!route, snis: !!route });
-  }, [open, route, presetNodeIds]);
+  });
 
   const exitList = exits.data?.exits ?? [];
   const takenSlugs = useMemo(() => new Set((routes.data?.routes ?? []).filter((r) => r.id !== route?.id).map((r) => r.slug)), [routes.data, route]);

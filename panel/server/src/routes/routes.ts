@@ -39,7 +39,7 @@ const RouteCreate = z.object({
   snis: routeFields.snis.default([]),
   exitIds: routeFields.exitIds.default([]),
   nodeIds: routeFields.nodeIds.default([]),
-  proxyProtocol: routeFields.proxyProtocol.default(false),
+  proxyProtocol: routeFields.proxyProtocol.default(true),
   healthCheck: routeFields.healthCheck.default(true),
   enabled: routeFields.enabled.default(true),
   limitMbit: routeFields.limitMbit.default(null),

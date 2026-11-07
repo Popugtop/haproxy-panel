@@ -37,7 +37,7 @@ let a: { id: string; key: string };
 let b: { id: string; key: string };
 let ag: FakeAgent;
 const deltas: any[] = [];
-const put = (body: object) => h.admin.req('PUT', '/api/settings/remnawave', { enabled: true, url: URL_, observeOnly: false, banMode: 'report', fixedBanSec: 3600, maxBanSec: 86400, pollIntervalSec: 15, allowlist: [], ...body });
+const put = (body: object) => h.admin.req('PUT', '/api/settings/remnawave', { enabled: true, url: URL_, observeOnly: false, banMode: 'report', scope: 'all', fixedBanSec: 3600, maxBanSec: 86400, pollIntervalSec: 15, allowlist: [], ...body });
 const events = async () => (await h.ctx.db.select().from(schema.torrentEvents)).sort((x, y) => x.reportId - y.reportId);
 const bansOf = async (ip: string) => h.ctx.db.select().from(schema.bans).where(eq(schema.bans.ip, ip));
 
@@ -265,6 +265,32 @@ describe('опрос и баны', () => {
   it('выключенный опрос ничего не делает', async () => {
     await put({ token: TOKEN, enabled: false });
     expect(await pollOnce(h.ctx)).toMatchObject({ status: 'disabled' });
+  });
+});
+
+describe('где банить: мосты с маршрутом на выход', () => {
+  it('нода Remnawave без маршрутов на мостах — пропуск; с маршрутом — бан только на нужном мосту', async () => {
+    await put({ token: TOKEN, enabled: true, observeOnly: false, scope: 'route', headers: {} });
+    remnaNodes = [
+      { uuid: 'u-tr', name: 'Turkey', address: '198.51.100.200', ips: [] },
+      { uuid: 'u-de', name: 'de-1', address: '203.0.113.50', ips: [] }, // совпадает с выходом панели «Выход DE»
+    ];
+    const [exitDe] = await h.ctx.db.select().from(schema.exits).where(eq(schema.exits.host, '203.0.113.50'));
+    const [route] = await h.ctx.db.insert(schema.routes).values({ name: 'Германия', slug: 'dt', snis: ['dt.example.com'] }).returning();
+    await h.ctx.db.insert(schema.routeExits).values({ routeId: route!.id, exitId: exitDe!.id, position: 0 });
+    await h.ctx.db.insert(schema.routeNodes).values({ routeId: route!.id, nodeId: a.id });
+    reports = [{ id: 1, ip: '198.51.100.1' }];
+    await pollOnce(h.ctx);
+    reports.push({ id: 2, ip: '198.51.100.71', node: 'Turkey' }, { id: 3, ip: '198.51.100.72', node: 'de-1' }, { id: 4, ip: '198.51.100.73', node: 'нет-такой' });
+    expect(await pollOnce(h.ctx)).toMatchObject({ processed: 3, banned: 1 });
+    const ev = Object.fromEntries((await events()).map((e) => [e.reportId, e]));
+    expect(ev[2]).toMatchObject({ action: 'skip' });
+    expect(ev[2]!.reason).toMatch(/Turkey/);
+    expect(await bansOf('198.51.100.71')).toHaveLength(0);
+    expect(ev[3]).toMatchObject({ action: 'ban', nodesCount: 1 });
+    expect((await bansOf('198.51.100.72')).map((x) => x.nodeId)).toEqual([a.id]); // только мост Aeza, не Хорёк
+    expect(ev[4]!.reason).toMatch(/нет в списке нод/);
+    await h.ctx.db.delete(schema.routes).where(eq(schema.routes.id, route!.id));
   });
 });
 
