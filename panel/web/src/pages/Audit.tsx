@@ -19,7 +19,7 @@ const LABELS: Record<string, string> = {
   'ban.create': 'Бан', 'ban.remove': 'Разбан', 'limit.set': 'Лимит скорости', 'limit.remove': 'Лимит снят',
   'torrent.ban': 'Бан за торрент', 'torrent.poll': 'Опрос Remnawave вручную',
   'alert.rule_update': 'Правило алерта изменено', 'alert.rule_reset': 'Правило алерта сброшено',
-  'settings.branding': 'Оформление', 'settings.remnawave': 'Настройки Remnawave', 'settings.telegram': 'Настройки Telegram', 'settings.telegram_test': 'Тест Telegram',
+  'settings.branding': 'Оформление', 'settings.remnawave': 'Настройки Remnawave', 'settings.telegram': 'Настройки Telegram', 'settings.telegram_test': 'Тест Telegram', 'settings.panel': 'Настройки панели',
 };
 
 const GROUPS = [

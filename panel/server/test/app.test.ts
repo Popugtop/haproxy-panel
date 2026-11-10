@@ -184,6 +184,9 @@ describe('безопасность входа', () => {
   });
 });
 
+// Сессия для последующих тестов: вход ограничен 10 попытками в минуту, поэтому второй раз не логинимся.
+let sharedAdmin: Session;
+
 describe('ноды: регистрация и подключение агента', () => {
   let admin: Session;
   let nodeId: string;
@@ -195,6 +198,7 @@ describe('ноды: регистрация и подключение агент�
     // Вход с TOTP следующего окна (предыдущие шаги уже использованы).
     const r = await admin.req('POST', '/api/auth/login', { login: 'admin', password: PASSWORD, code: await freshCode() });
     expect(r.status).toBe(200);
+    sharedAdmin = admin;
   });
 
   it('создание ноды возвращает одноразовый токен и команду установки', async () => {
@@ -370,5 +374,41 @@ describe('install.sh и загрузки', () => {
     expect((await fetch(base + '/dl/install.sh')).status).toBe(404);
     expect((await fetch(base + '/dl/..%2F..%2Fetc%2Fpasswd')).status).toBe(404);
     expect((await fetch(base + '/dl/__proto__')).status).toBe(404);
+  });
+});
+
+describe('настройки панели: домен для новых маршрутов', () => {
+  const admin = () => sharedAdmin;
+
+  it('по умолчанию popug.cloud и отдаётся в /api/system', async () => {
+    const r = await admin().req('GET', '/api/settings/panel');
+    expect(r.json).toEqual({ sniDomain: 'popug.cloud' });
+    expect((await admin().req('GET', '/api/system')).json.sniDomain).toBe('popug.cloud');
+  });
+
+  it('сохраняет домен в нижнем регистре и без схемы', async () => {
+    expect((await admin().req('PUT', '/api/settings/panel', { sniDomain: 'Popug.Cloud' })).json).toEqual({ sniDomain: 'popug.cloud' });
+    expect((await admin().req('PUT', '/api/settings/panel', { sniDomain: 'vpn.example.org' })).status).toBe(200);
+    expect((await admin().req('GET', '/api/system')).json.sniDomain).toBe('vpn.example.org');
+    await admin().req('PUT', '/api/settings/panel', { sniDomain: 'popug.cloud' });
+  });
+
+  it('мусор и устаревшие значения отклоняются', async () => {
+    for (const bad of ['', 'https://popug.cloud', 'popug', 'popug.cloud/path', 'pop ug.cloud', 'de.']) {
+      expect((await admin().req('PUT', '/api/settings/panel', { sniDomain: bad })).status, bad).toBe(400);
+    }
+    // слитое через сохранённую настройку старое значение не затирает умолчание
+    expect((await admin().req('GET', '/api/settings/panel')).json.sniDomain).toBe('popug.cloud');
+  });
+
+  it('без входа недоступно', async () => {
+    expect((await new Session().req('GET', '/api/settings/panel')).status).toBe(401);
+    expect((await new Session().req('PUT', '/api/settings/panel', { sniDomain: 'x.example.com' })).status).toBe(401);
+  });
+
+  it('смена домена попадает в аудит', async () => {
+    await admin().req('PUT', '/api/settings/panel', { sniDomain: 'popug.cloud' });
+    const a = await admin().req('GET', '/api/audit?limit=20');
+    expect(a.json.entries.some((e: { action: string }) => e.action === 'settings.panel')).toBe(true);
   });
 });

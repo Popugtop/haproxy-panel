@@ -131,3 +131,16 @@ export interface TelegramSettings {
 
 export const TELEGRAM_DEFAULTS: TelegramSettings = { enabled: false, tokenEnc: null, chatId: '' };
 export const loadTelegram = (db: DB): Promise<TelegramSettings> => getSetting(db, 'telegram', TELEGRAM_DEFAULTS);
+
+// ───────── Панель ─────────
+
+/** Домен для подсказки SNI при создании маршрута: новый маршрут de → de.<домен>. */
+export interface PanelSettings {
+  sniDomain: string;
+}
+
+export const PANEL_DEFAULTS: PanelSettings = { sniDomain: 'popug.cloud' };
+export const loadPanelSettings = (db: DB): Promise<PanelSettings> => getSetting(db, 'panel', PANEL_DEFAULTS);
+
+/** Домен из одних меток латиницей: de.popug.cloud, без схемы, порта и слэшей. */
+export const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;

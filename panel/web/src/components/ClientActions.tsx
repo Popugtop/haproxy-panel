@@ -132,7 +132,7 @@ export function LimitDialog({ open, onClose, ip: fixedIp, nodeIds: preset, mbit:
     },
   });
 
-  if (applyFor) return <ApplyDialog nodeId={applyFor.id} nodeName={applyFor.name} onClose={() => { setApplyFor(null); refresh(); }} />;
+  if (applyFor && open) return <ApplyDialog nodeId={applyFor.id} nodeName={applyFor.name} onClose={() => { setApplyFor(null); refresh(); }} />;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()} maxWidth="s" fullWidth aria-labelledby="limit-title">

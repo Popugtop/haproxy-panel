@@ -3,7 +3,7 @@ import { Button, Dialog, Label, Select, Switch, Text, TextArea, TextInput } from
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { api, ApiError, type ExitDto, type RouteDto, type RouteInput } from '../lib/api';
-import { useExits, useNodes, useRoutes } from '../lib/queries';
+import { useExits, useNodes, useRoutes, useSystem } from '../lib/queries';
 import { useOnOpen } from '../lib/useOnOpen';
 import { ApplyDialog } from './ApplyDialog';
 import { ExitDialog } from './ExitDialog';
@@ -26,6 +26,7 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   const exits = useExits();
   const nodes = useNodes();
   const routes = useRoutes();
+  const sys = useSystem();
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -60,15 +61,17 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   const exitList = exits.data?.exits ?? [];
   const takenSlugs = useMemo(() => new Set((routes.data?.routes ?? []).filter((r) => r.id !== route?.id).map((r) => r.slug)), [routes.data, route]);
 
-  // Домен для подсказки SNI: самый частый «хвост» после первой точки у SNI существующих маршрутов (de.popug.cloud → popug.cloud).
+  // Домен для подсказки SNI: из настроек панели (Настройки → Панель). Пока настройки не загрузились, берём самый частый
+  // «хвост» после первой точки у SNI существующих маршрутов; если маршрутов нет — стандартный popug.cloud.
   const suffix = useMemo(() => {
+    if (sys.data?.sniDomain) return sys.data.sniDomain;
     const count = new Map<string, number>();
     for (const r of routes.data?.routes ?? []) for (const sni of r.snis) {
       const d = sni.split('.').slice(1).join('.');
       if (d.includes('.')) count.set(d, (count.get(d) ?? 0) + 1);
     }
-    return [...count].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
-  }, [routes.data]);
+    return [...count].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'popug.cloud';
+  }, [sys.data, routes.data]);
   const suggestSni = (slugValue: string) => (!touched.snis && suffix && slugValue ? setSnis(`${slugValue}.${suffix}`) : undefined);
 
   // Подсказки по первому выбранному выходу: имя «Германия (🇷🇺 → 🇩🇪)», идентификатор de, SNI de.<домен>.
@@ -101,14 +104,17 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   });
 
   const close = () => {
+    // Сбрасываем все шаги сами: родитель может держать это окно смонтированным, и без сброса шаг «сохранён» остался бы на экране.
     setApplyNode(null);
+    setSaved(null);
+    setNewExit(false);
     onClose();
   };
 
-  if (applyNode) return <ApplyDialog nodeId={applyNode.id} nodeName={applyNode.name} onClose={() => setApplyNode(null)} />;
+  if (applyNode && open) return <ApplyDialog nodeId={applyNode.id} nodeName={applyNode.name} onClose={() => setApplyNode(null)} />;
 
   // Шаг 2: маршрут сохранён — применить на каждую ноду отдельно.
-  if (saved) {
+  if (saved && open) {
     return (
       <Dialog open onOpenChange={(o) => !o && close()} maxWidth="m" fullWidth aria-labelledby="route-saved">
         <Dialog.Header caption={`Маршрут «${saved.name}» сохранён`} id="route-saved" />

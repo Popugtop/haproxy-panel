@@ -389,6 +389,7 @@ export interface SystemInfo {
   publicUrl: string;
   demo: boolean;
   agentsOnline: number;
+  sniDomain: string;
   release: { version: string | null; files: Partial<Record<'amd64' | 'arm64', { sha256: string; signed: boolean }>>; hasPublicKey: boolean };
 }
 

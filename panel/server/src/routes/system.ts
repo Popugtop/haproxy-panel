@@ -8,6 +8,7 @@ import { schema } from '../db/index.js';
 import { actorOf, audit } from '../lib/audit.js';
 import { isNewer } from '../lib/agentRelease.js';
 import { HttpError, notFound, parse, requireAuth } from '../lib/http.js';
+import { DOMAIN_RE, loadPanelSettings, putSetting } from '../lib/settings.js';
 
 export function systemRoutes(app: FastifyInstance, ctx: Ctx): void {
   const { db, registry, config } = ctx;
@@ -20,7 +21,19 @@ export function systemRoutes(app: FastifyInstance, ctx: Ctx): void {
     demo: config.DEMO,
     release: ctx.release(),
     agentsOnline: registry.onlineCount(),
+    sniDomain: (await loadPanelSettings(db)).sniDomain,
   }));
+
+  /** Домен для подсказки SNI: он подставляется в SNI нового маршрута (de → de.popug.cloud). */
+  app.get('/api/settings/panel', auth, async () => loadPanelSettings(db));
+
+  app.put('/api/settings/panel', { ...auth, config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (req) => {
+    const b = parse(z.object({ sniDomain: z.string().trim().toLowerCase().max(253) }), req.body);
+    if (!DOMAIN_RE.test(b.sniDomain)) throw new HttpError(400, 'validation', 'Домен выглядит как popug.cloud: латинские буквы, цифры, дефисы и точки, без https:// и пути');
+    await putSetting(db, 'panel', { sniDomain: b.sniDomain });
+    await audit(db, actorOf(req), 'settings.panel', undefined, { sniDomain: b.sniDomain }, req.ip);
+    return { sniDomain: b.sniDomain };
+  });
 
   /**
    * Обновление агента по кнопке. Панель лишь просит: агент сам скачает бинарник с панели и поставит его, только если подпись

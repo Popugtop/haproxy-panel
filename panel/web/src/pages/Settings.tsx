@@ -152,9 +152,23 @@ function shortAgent(ua: string | null): string {
 }
 
 function PanelTab() {
+  const qc = useQueryClient();
   const sys = useSystem();
   const s = sys.data;
   const rel = s?.release;
+  const [domain, setDomain] = useState('');
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (s && !loaded) {
+      setDomain(s.sniDomain);
+      setLoaded(true);
+    }
+  }, [s, loaded]);
+  const saveDomain = useMutation({
+    mutationFn: (v: string) => api.put<{ sniDomain: string }>('/api/settings/panel', { sniDomain: v }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['system'] }),
+  });
+  const domainDirty = !!s && domain.trim() !== s.sniDomain;
   const rows: [string, React.ReactNode][] = [
     ['Версия панели', s ? `v${s.version}` : '—'],
     ['Публичный адрес', <span className="mono" key="u">{s?.publicUrl ?? '—'}</span>],
@@ -168,6 +182,19 @@ function PanelTab() {
       <Panel>
         <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '220px 1fr', gap: '10px 16px' }}>
           {rows.map(([k, v]) => (<><Text key={k} color="secondary">{k}</Text><Text key={k + 'v'}>{v}</Text></>))}
+        </div>
+      </Panel>
+      <Panel>
+        <div className="stack" style={{ padding: 20 }}>
+          <Text variant="subheader-3">Домен для новых маршрутов</Text>
+          <Field label="Базовый домен" help="Из него строится подсказка SNI при создании маршрута: маршрут de → de.popug.cloud. Уже созданные SNI не меняются.">
+            <TextInput value={domain} onUpdate={setDomain} placeholder="popug.cloud" controlProps={{ className: 'mono' }} />
+          </Field>
+          {saveDomain.isError && <Notice theme="danger">{errText(saveDomain.error)}</Notice>}
+          {saveDomain.isSuccess && !domainDirty && <Notice theme="success">Сохранено.</Notice>}
+          <div>
+            <Button view="action" disabled={!domainDirty || !domain.trim()} loading={saveDomain.isPending} onClick={() => saveDomain.mutate(domain.trim().toLowerCase())}>Сохранить</Button>
+          </div>
         </div>
       </Panel>
       {rel && !rel.hasPublicKey && <Notice theme="warning" title="Обновление агентов по кнопке отключено">Сгенерируйте ключ (<span className="mono">make keygen</span> в каталоге agent), положите <span className="mono">agent/release.pub</span> и пересоберите панель с подписью — подробности в README.</Notice>}
