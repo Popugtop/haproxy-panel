@@ -71,7 +71,7 @@ export function OverviewPage() {
       </div>
     ) },
     { id: 'tx', align: 'end', ...W(112), name: () => <Hint label="Исходящий, Мбит/с" tip="Скорость исходящего трафика по физическим интерфейсам моста (без docker и veth). Значения меньше 0,1 Мбит/с показаны в кбит/с" />, template: (n) => n.live ? <Num v={mbit(n.live.txBps)} /> : "—" },
-    { id: 'clients', align: 'end', ...W(96), name: () => <Hint label="IP онлайн" tip="Клиентские IP с открытыми соединениями прямо сейчас (stick-table st_clients)" />, template: (n) => n.live?.activeClients != null ? int(n.live.activeClients) : '—' },
+    { id: 'clients', align: 'end', ...W(96), name: () => <Hint label="IP онлайн" tip="IP, через которые за последнюю минуту шёл заметный трафик. В скобках — все IP с открытыми соединениями, включая простаивающие." />, template: (n) => n.live?.activeClients != null ? <>{int(n.live.flowingClients ?? n.live.activeClients)}{n.live.flowingClients != null && <span className="secondary"> ({int(n.live.activeClients)})</span>}</> : '—' },
     { id: 'backends', align: 'end', ...W(92), name: () => <Hint label="Бэкенды" tip="Работающих из общего числа. Бэкенд не работает, если ни один его сервер не проходит check" />, template: (n) => n.live ? (
       <span style={n.live.backendsDown > 0 ? { color: 'var(--g-color-text-danger)' } : undefined}>{n.live.backendsTotal - n.live.backendsDown}/{n.live.backendsTotal}</span>
     ) : '—' },
