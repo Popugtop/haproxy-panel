@@ -6,6 +6,7 @@ import type { Ctx } from '../app.js';
 import { schema } from '../db/index.js';
 import { actorOf, audit, diffOf } from '../lib/audit.js';
 import { checkHistory, ingestAgentChecks, pairStatuses, pushChecks, runPanelChecks, worst } from '../lib/checks.js';
+import { firewallHints } from '../lib/firewall.js';
 import { HttpError, notFound, parse, requireAuth } from '../lib/http.js';
 import { configState, countRoutesOfExit, loadRoutes, nodesOfExit, normalizeSnis, saveRoute, validateExit, validateRoute, type RouteFull } from '../lib/routes.js';
 
@@ -56,6 +57,14 @@ export function routeRoutes(app: FastifyInstance, ctx: Ctx): void {
     const list = await db.select().from(schema.exits).orderBy(schema.exits.name);
     const used = await db.select({ exitId: schema.routeExits.exitId, routeId: schema.routeExits.routeId }).from(schema.routeExits);
     return { exits: list.map((e) => ({ ...e, routes: used.filter((u) => u.exitId === e.id).length })) };
+  });
+
+  /** Готовые команды для фаервола выхода: IP мостов с маршрутом на него и порт выхода. */
+  app.get('/api/exits/:id/firewall', auth, async (req) => {
+    const { id } = parse(Id, req.params);
+    const [e] = await db.select().from(schema.exits).where(eq(schema.exits.id, id));
+    if (!e) throw notFound('Выход не найден');
+    return firewallHints(db, e);
   });
 
   app.post('/api/exits', auth, async (req, reply) => {

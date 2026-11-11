@@ -224,6 +224,14 @@ export interface ExitRow extends ExitDto {
   routes: number;
 }
 
+export interface FirewallHints {
+  port: number;
+  bridges: { nodeId: string; name: string; ip: string }[];
+  noIp: string[];
+  ufw: string;
+  iptables: string;
+}
+
 export interface RouteNodeStatus {
   nodeId: string;
   nodeName: string;

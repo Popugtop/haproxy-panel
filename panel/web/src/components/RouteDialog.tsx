@@ -121,6 +121,7 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
         <Dialog.Body>
           <div className="stack">
             <Text color="secondary">Конфиг на нодах пока прежний. Применяйте на каждую ноду отдельно: у каждой свой дифф, и если применение сорвётся, откатится только эта нода.</Text>
+            {saved.nodes.length > 0 && <Notice theme="info">Если на выходах включён фаервол, откройте на них порт для этого моста: страница «Выходы» → «Фаервол» покажет готовые команды.</Notice>}
             {saved.nodes.length === 0 && <Notice theme="info">Маршрут не привязан ни к одной ноде, применять нечего.</Notice>}
             {saved.nodes.map((n) => (
               <div key={n.nodeId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--g-color-line-generic)' }}>

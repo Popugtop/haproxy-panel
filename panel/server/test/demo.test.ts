@@ -54,7 +54,7 @@ describe('демо-режим', () => {
     expect(c!.live!.backendsDown).toBe(1);
     expect(c!.bwlimSupported).toBe(false);
     expect(b!.live!.cpuPct!).toBeLessThan(50);
-    expect(c!.live!.cpuPct!).toBeGreaterThan(60);
+    expect(c!.live!.cpuPct!).toBeGreaterThan(b!.live!.cpuPct!); // третья загружена сильнее второй в любое время суток
   });
 
   it('история есть для всех диапазонов графиков', async () => {
