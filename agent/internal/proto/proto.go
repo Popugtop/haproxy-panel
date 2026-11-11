@@ -116,8 +116,11 @@ type HAProxyMetrics struct {
 }
 
 type Clients struct {
-	Tracked int64       `json:"tracked"`
-	Active  int64       `json:"active"`
+	Tracked int64 `json:"tracked"`
+	// Active — IP с открытыми соединениями; открытое соединение не значит, что человек что-то качает.
+	Active int64 `json:"active"`
+	// Flowing — IP, через которые за последнюю минуту шёл заметный трафик (см. haproxy.FlowingMinBps).
+	Flowing int64       `json:"flowing"`
 	Top     []ClientRow `json:"top"`
 }
 

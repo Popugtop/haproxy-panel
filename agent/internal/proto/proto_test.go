@@ -35,6 +35,9 @@ func TestFixtures(t *testing.T) {
 	if m.HAProxy.Backends[1].Servers[0].CheckMs != nil {
 		t.Fatal("checkMs должен быть null")
 	}
+	if m.Clients.Flowing != 23 {
+		t.Fatalf("flowing: %d", m.Clients.Flowing)
+	}
 	if m.Sys.Net.RxBytes != 912345678901 {
 		t.Fatalf("rx: %d", m.Sys.Net.RxBytes)
 	}

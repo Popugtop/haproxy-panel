@@ -226,7 +226,7 @@ function buildMetrics(n: DemoNode, st: CounterState, t: number, dtMs: number, bo
       backends,
       frontends: [{ name: 'fe_sni', scur: backends.reduce((a, b) => a + b.scur, 0), bin: 1, bout: 1, stot: 1 }],
     },
-    clients: { tracked: s.clients * 3 + 40, active: s.clients, top: topClients(n, t, bootT, s) },
+    clients: { tracked: s.clients * 3 + 40, active: s.clients, flowing: Math.round(s.clients * 0.42), top: topClients(n, t, bootT, s) },
     clientsError: null,
   };
 }
@@ -299,7 +299,7 @@ function fakeSocket(n: DemoNode, getConn: () => AgentConn, ctx: Ctx, state: { cf
       if (cmd.op === 'get_clients') {
         const now = Date.now();
         const smp = sample(n, now, 15_000, state.bootT);
-        return reply(cmd.id, { data: { tracked: smp.clients * 3 + 40, active: smp.clients, top: topClients(n, now, state.bootT, smp) } });
+        return reply(cmd.id, { data: { tracked: smp.clients * 3 + 40, active: smp.clients, flowing: Math.round(smp.clients * 0.42), top: topClients(n, now, state.bootT, smp) } });
       }
       if (cmd.op === 'apply_bans') return reply(cmd.id, { data: { active: 3, rejected: [] } });
       if (cmd.op === 'update_agent') {

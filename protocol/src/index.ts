@@ -133,6 +133,8 @@ export const MetricsSchema = z.object({
     .object({
       tracked: bytes,
       active: bytes,
+      /** IP с заметным трафиком за минуту. Старые агенты поле не присылают. */
+      flowing: bytes.optional(),
       top: z.array(ClientRowSchema).max(200),
     })
     .nullable(),
@@ -208,6 +210,7 @@ export type BansResult = z.infer<typeof BansResultSchema>;
 export const ClientsDataSchema = z.object({
   tracked: bytes,
   active: bytes,
+  flowing: bytes.optional(),
   top: z.array(ClientRowSchema).max(1000),
 });
 export type ClientsData = z.infer<typeof ClientsDataSchema>;

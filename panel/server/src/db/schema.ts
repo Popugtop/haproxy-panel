@@ -160,6 +160,7 @@ export interface LiveData {
   clients: {
     tracked: number;
     active: number;
+    flowing?: number;
     top: {
       ip: string;
       connCur: number;

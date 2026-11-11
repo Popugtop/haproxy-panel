@@ -1,4 +1,4 @@
-import { ArrowRightFromSquare, ArrowsRotateRight, Bell, ClockArrowRotateLeft, Gear, Globe, Magnet, Moon, PersonWorker, Pulse, Server, Sun } from '@gravity-ui/icons';
+import { ArrowRightFromSquare, ArrowsRotateRight, Bell, ChartColumn, ClockArrowRotateLeft, Gear, Globe, Magnet, Moon, PersonWorker, Pulse, Server, Sun } from '@gravity-ui/icons';
 import { Button, Icon, Label, Text } from '@gravity-ui/uikit';
 import { AsideHeader, type MenuItem } from '@gravity-ui/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ import { ExitsPage } from './pages/Exits';
 import { OverviewPage } from './pages/Overview';
 import { RoutePage } from './pages/Route';
 import { RoutesPage } from './pages/Routes';
+import { StatsPage } from './pages/Stats';
 
 export function useMe() {
   return useQuery({
@@ -95,6 +96,7 @@ function Shell({ me }: { me: Me }) {
     { id: 'overview', title: 'Обзор', icon: Pulse, current: pathname === '/', onItemClick: () => nav('/') },
     { id: 'nodes', title: 'Ноды', icon: Server, current: pathname.startsWith('/nodes'), onItemClick: () => nav('/nodes') },
     { id: 'routes', title: 'Маршруты', icon: ArrowsRotateRight, current: pathname.startsWith('/routes'), onItemClick: () => nav('/routes') },
+    { id: 'stats', title: 'Статистика', icon: ChartColumn, current: pathname.startsWith('/stats'), onItemClick: () => nav('/stats') },
     { id: 'clients', title: 'Клиенты', icon: PersonWorker, current: pathname.startsWith('/clients'), onItemClick: () => nav('/clients') },
     { id: 'torrent', title: 'Торрент-блокер', icon: Magnet, current: pathname.startsWith('/torrent'), onItemClick: () => nav('/torrent') },
     { id: 'alerts', title: 'Алерты', icon: Bell, rightAdornment: alertCount > 0 ? <Label theme="danger" size="xs">{alertCount}</Label> : undefined, current: pathname.startsWith('/alerts'), onItemClick: () => nav('/alerts') },
@@ -124,6 +126,7 @@ function Shell({ me }: { me: Me }) {
           <Route path="/nodes/:id/*" element={<NodePage />} />
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/routes/:id" element={<RoutePage />} />
+          <Route path="/stats" element={<StatsPage />} />
           <Route path="/clients/*" element={<ClientsPage />} />
           <Route path="/torrent" element={<TorrentPage />} />
           <Route path="/alerts/*" element={<AlertsPage />} />

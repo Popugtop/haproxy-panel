@@ -8,7 +8,7 @@ import { Sparkline } from '../components/Chart';
 import { EmptyHint, Hint, Notice, QuotaBar, RouterLink, StatusDot } from '../components/ui';
 import type { NodeSummary } from '../lib/api';
 import { bytes, int, mbit, pct } from '../lib/format';
-import { useFleetTraffic, useNodes, useRoutes } from '../lib/queries';
+import { useFleetTraffic, useNodes, useRoutes, useTrafficSummary } from '../lib/queries';
 import { nodeState } from '../lib/state';
 
 function StatCard({ label, tip, children }: { label: string; tip?: string; children: React.ReactNode }) {
@@ -44,6 +44,11 @@ export function OverviewPage() {
   const totalTx = nodes.reduce((a, n) => a + (n.live?.txBps ?? 0), 0);
   const totalRx = nodes.reduce((a, n) => a + (n.live?.rxBps ?? 0), 0);
   const clients = nodes.reduce((a, n) => a + (n.live?.activeClients ?? 0), 0);
+  // «Онлайн» — IP с заметным трафиком; пока на каком-то мосту старый агент, не умеющий считать, показываем подключённые IP.
+  const liveNodes = nodes.filter((n) => n.status === 'online' && n.live);
+  const flowingKnown = liveNodes.length > 0 && liveNodes.every((n) => n.live!.flowingClients != null);
+  const flowing = nodes.reduce((a, n) => a + (n.live?.flowingClients ?? 0), 0);
+  const traffic = useTrafficSummary();
   const sessions = nodes.reduce((a, n) => a + (n.live?.sessions ?? 0), 0);
   const attention = nodes.map((n) => ({ n, s: nodeState(n) })).filter((x) => x.s.tone === 'bad' || x.s.tone === 'warn');
   const redRoutes = allRoutes.filter((r) => r.enabled && r.status === 'bad');
@@ -99,9 +104,9 @@ export function OverviewPage() {
           <Text color="secondary">входящий {mbit(totalRx).value} {mbit(totalRx).unit}</Text>
           <Sparkline t={fleet.data?.t ?? []} values={spark} color="#3b82f6" />
         </StatCard>
-        <StatCard label="IP онлайн" tip="Клиентские IP с открытыми соединениями на всех мостах">
-          <Value>{int(clients)}</Value>
-          <Text color="secondary">сессий {int(sessions)}</Text>
+        <StatCard label="IP онлайн" tip="IP, через которые за последнюю минуту шёл заметный трафик (от 1 КБ/с). Простаивающие соединения без трафика не считаются; IPv6 одного устройства считается один раз. Это оценка числа людей, а не точное число: за одним IP (мобильная сеть) бывает много людей, а у одного человека несколько устройств.">
+          <Value>{int(flowingKnown ? flowing : clients)}</Value>
+          <Text color="secondary">{flowingKnown ? `подключено ${int(clients)} · сессий ${int(sessions)}` : `сессий ${int(sessions)} · обновите агентов для точного счёта`}</Text>
         </StatCard>
         <StatCard label="Требуют внимания">
           <Value>{attentionTotal}</Value>
@@ -115,6 +120,30 @@ export function OverviewPage() {
           )}
         </StatCard>
       </div>
+
+      <Card type="container" view="outlined" className="card-pad traffic-card">
+        <div className="traffic-head">
+          <Text color="secondary"><Hint label="Потребление трафика" tip="Исходящий трафик нод: каждый байт пользователя уходит с моста либо клиенту, либо на выход, поэтому это и есть весь пользовательский трафик. Сутки и месяц считаются по UTC." /></Text>
+          <RouterLink to="/stats">Подробная статистика</RouterLink>
+        </div>
+        <div className="traffic-grid">
+          {([
+            ['Сегодня', traffic.data?.today],
+            ['В этом месяце', traffic.data?.month],
+            ['За всё время', traffic.data?.total],
+          ] as const).map(([label, v]) => {
+            const b = bytes(v?.tx);
+            return (
+              <div key={label}>
+                <Text color="secondary">{label}</Text>
+                <Value unit={b.unit}>{traffic.isPending ? '…' : b.value}</Value>
+                <Text color="secondary">входящий {v ? `${bytes(v.rx).value} ${bytes(v.rx).unit}` : '—'}</Text>
+              </div>
+            );
+          })}
+        </div>
+        {traffic.data?.since && <Text color="secondary" variant="body-1">Данные ведутся с {traffic.data.since.split('-').reverse().join('.')}.</Text>}
+      </Card>
 
       <div className="tbl tbl-link">
         <Table

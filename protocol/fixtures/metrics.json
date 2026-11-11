@@ -46,6 +46,7 @@
   "clients": {
     "tracked": 214,
     "active": 61,
+    "flowing": 23,
     "top": [
       {
         "ip": "198.51.100.7",

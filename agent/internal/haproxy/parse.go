@@ -236,14 +236,36 @@ func normalizeIP(s string) string {
 	return s
 }
 
+// FlowingMinBps — порог «IP реально качает»: средняя скорость за минуту (вход + выход), байт/с. Фоновые keep-alive
+// соединения мессенджеров и приложений дают единицы-сотни байт/с и под порог не попадают.
+const FlowingMinBps = 1024.0
+
+// deviceKey сводит адреса одного устройства: IPv6 с меняющимися privacy-адресами в пределах /64 считаются одним клиентом.
+func deviceKey(ip string) string {
+	a, err := netip.ParseAddr(ip)
+	if err != nil || a.Is4() || a.Is4In6() {
+		return ip
+	}
+	p, err := a.Prefix(64)
+	if err != nil {
+		return ip
+	}
+	return p.String()
+}
+
 // Summarize считает активные IP и выбирает топ: объединение top-N по скорости и по объёму.
 func Summarize(rows []proto.ClientRow, used int64, topN int) proto.Clients {
 	c := proto.Clients{Tracked: used, Top: []proto.ClientRow{}}
+	flowing := map[string]struct{}{}
 	for _, r := range rows {
 		if r.ConnCur > 0 {
 			c.Active++
 		}
+		if r.ConnCur > 0 && r.RateIn+r.RateOut >= FlowingMinBps {
+			flowing[deviceKey(r.IP)] = struct{}{}
+		}
 	}
+	c.Flowing = int64(len(flowing))
 	pick := func(less func(a, b proto.ClientRow) bool) []proto.ClientRow {
 		cp := append([]proto.ClientRow(nil), rows...)
 		sort.Slice(cp, func(i, j int) bool { return less(cp[i], cp[j]) })

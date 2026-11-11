@@ -72,8 +72,8 @@ export function NodePage() {
             <Text variant="header-2" as="h1">{n.name}</Text>
             <StatusDot tone={st.tone}>{st.label}</StatusDot>
             {n.status === 'online' && d.summary?.activeClients != null && (
-              <span className="secondary" title="Клиентские IP с активными соединениями или трафиком за последнюю минуту">
-                · <b className="num">{int(d.summary.activeClients)}</b> IP онлайн
+              <span className="secondary" title="IP с трафиком за последнюю минуту; в скобках — все IP с открытыми соединениями">
+                · <b className="num">{int(d.summary.flowingClients ?? d.summary.activeClients)}</b> IP онлайн{d.summary.flowingClients != null && <> ({int(d.summary.activeClients)} подключено)</>}
               </span>
             )}
           </div>
@@ -142,7 +142,7 @@ function OverviewTab({ d }: { d: NodeDetail }) {
           <DefinitionList nameMaxWidth={160}>
             <DefinitionList.Item name="Исходящий">{speed(live?.sys.txBps)}</DefinitionList.Item>
             <DefinitionList.Item name="Входящий">{speed(live?.sys.rxBps)}</DefinitionList.Item>
-            <DefinitionList.Item name="IP онлайн">{live?.clients ? <>{int(live.clients.active)} <span className="secondary">из {int(live.clients.tracked)} в таблице</span></> : '—'}</DefinitionList.Item>
+            <DefinitionList.Item name="IP онлайн">{live?.clients ? <>{int(live.clients.flowing ?? live.clients.active)} <span className="secondary">{live.clients.flowing != null ? `с трафиком, подключено ${int(live.clients.active)}` : `из ${int(live.clients.tracked)} в таблице`}</span></> : '—'}</DefinitionList.Item>
             <DefinitionList.Item name="Сессии">{live ? int(live.sessions) : '—'}</DefinitionList.Item>
             <DefinitionList.Item name="CPU">{live ? pct(live.sys.cpuPct, 1) : '—'}</DefinitionList.Item>
             <DefinitionList.Item name="Память">{live && live.sys.memTotal ? `${pct((1 - live.sys.memAvail / live.sys.memTotal) * 100)} из ${bytes(live.sys.memTotal).value} ${bytes(live.sys.memTotal).unit}` : '—'}</DefinitionList.Item>

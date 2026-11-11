@@ -99,6 +99,8 @@ export interface LiveSummary {
   load1: number;
   sessions: number;
   activeClients: number | null;
+  /** IP с заметным трафиком за минуту; null — агент старый и не считает. */
+  flowingClients: number | null;
   backendsTotal: number;
   backendsDown: number;
   haproxyOk: boolean;
@@ -149,7 +151,7 @@ export interface LiveData {
   haproxy: { ok: boolean; error: string | null; version: string | null; uptimeSec: number | null };
   backends: LiveBackend[];
   sessions: number;
-  clients: { tracked: number; active: number; top: ClientRow[] } | null;
+  clients: { tracked: number; active: number; flowing?: number; top: ClientRow[] } | null;
   clientsError: string | null;
 }
 
@@ -530,4 +532,32 @@ export interface AuditEntry {
   entityId: string | null;
   diff: Record<string, unknown> | null;
   ip: string | null;
+}
+
+export interface TrafficBytes {
+  tx: number;
+  rx: number;
+}
+
+export interface TrafficSummary {
+  day: string;
+  today: TrafficBytes;
+  month: TrafficBytes;
+  total: TrafficBytes;
+  since: string | null;
+}
+
+export type TrafficGroup = 'node' | 'route';
+
+export interface TrafficStats {
+  by: TrafficGroup;
+  from: string;
+  to: string;
+  days: string[];
+  total: number;
+  avgPerDay: number;
+  peak: { day: string; bytes: number } | null;
+  dailyTotal: number[];
+  series: { key: string; name: string; total: number; daily: number[] }[];
+  others: number;
 }

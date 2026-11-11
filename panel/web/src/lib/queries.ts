@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api, type AlertDto, type AlertRuleDto, type BanRow, type ClientsReply, type ConfigState, type ExitRow, type FleetSeries, type LimitRow, type NodeSummary, type RemnaSettingsDto, type RouteDto, type SystemInfo, type TelegramSettingsDto, type TorrentEvent, type TorrentStatus } from './api';
+import { api, type TrafficGroup, type TrafficStats, type TrafficSummary, type AlertDto, type AlertRuleDto, type BanRow, type ClientsReply, type ConfigState, type ExitRow, type FleetSeries, type LimitRow, type NodeSummary, type RemnaSettingsDto, type RouteDto, type SystemInfo, type TelegramSettingsDto, type TorrentEvent, type TorrentStatus } from './api';
 
 export function useNodes() {
   return useQuery({ queryKey: ['nodes'], queryFn: () => api.get<{ nodes: NodeSummary[] }>('/api/nodes'), refetchInterval: 5_000 });
@@ -38,3 +38,13 @@ export const useAlerts = () => useQuery({ queryKey: ['alerts'], queryFn: () => a
 export const useAlertSummary = () => useQuery({ queryKey: ['alert-summary'], queryFn: () => api.get<{ firing: number; crit: number; warn: number }>('/api/alerts/summary'), refetchInterval: 15_000 });
 export const useAlertHistory = () => useQuery({ queryKey: ['alert-history'], queryFn: () => api.get<{ alerts: AlertDto[] }>('/api/alerts/history?limit=100'), refetchInterval: 30_000 });
 export const useAlertRules = () => useQuery({ queryKey: ['alert-rules'], queryFn: () => api.get<{ rules: AlertRuleDto[] }>('/api/alerts/rules') });
+
+export const useTrafficSummary = () => useQuery({ queryKey: ['traffic-summary'], queryFn: () => api.get<TrafficSummary>('/api/traffic/summary'), refetchInterval: 30_000 });
+export const useTrafficStats = (p: { from: string; to: string; by: TrafficGroup; top: number }, enabled = true) =>
+  useQuery({
+    queryKey: ['traffic-stats', p],
+    queryFn: () => api.get<TrafficStats>(`/api/traffic/stats?from=${p.from}&to=${p.to}&by=${p.by}&top=${p.top}`),
+    refetchInterval: 60_000,
+    placeholderData: (prev) => prev,
+    enabled,
+  });

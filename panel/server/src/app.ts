@@ -29,6 +29,7 @@ import { configRoutes } from './routes/config.js';
 import { nodeRoutes } from './routes/nodes.js';
 import { routeRoutes } from './routes/routes.js';
 import { systemRoutes } from './routes/system.js';
+import { trafficRoutes } from './routes/traffic.js';
 
 export interface Ctx {
   db: DB;
@@ -119,6 +120,7 @@ export async function buildApp(db: DB, config: Config): Promise<{ app: FastifyIn
   alertRoutes(app, ctx);
   auditRoutes(app, ctx);
   systemRoutes(app, ctx);
+  trafficRoutes(app, ctx);
   agentRoutes(app, ctx);
   distRoutes(app, ctx);
 

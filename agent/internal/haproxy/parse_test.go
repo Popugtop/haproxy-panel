@@ -3,6 +3,8 @@ package haproxy
 import (
 	"strings"
 	"testing"
+
+	"popug-bridges/agent/internal/proto"
 )
 
 // Образец show stat HAProxy 2.8 в стиле SNI-моста (колонки обрезаны до нужных плюс типичный хвост).
@@ -108,8 +110,27 @@ func TestSummarize(t *testing.T) {
 	if c.Tracked != 4 || c.Active != 2 {
 		t.Fatalf("%+v", c)
 	}
+	// 2001:db8::5 держит соединение, но качает ~110 байт/с (keep-alive): среди «реально качающих» его нет
+	if c.Flowing != 1 {
+		t.Fatalf("flowing: %+v", c)
+	}
 	// топ-1 по скорости (198.51.100.7) + топ-1 по объёму (192.0.2.1)
 	if len(c.Top) != 2 || c.Top[0].IP != "198.51.100.7" || c.Top[1].IP != "192.0.2.1" {
 		t.Fatalf("top: %+v", c.Top)
+	}
+}
+
+func TestSummarizeFlowingGroupsIPv6Privacy(t *testing.T) {
+	rows := []proto.ClientRow{
+		{IP: "2001:db8:1:2::a", ConnCur: 1, RateOut: 5000},
+		{IP: "2001:db8:1:2:ffff::b", ConnCur: 2, RateOut: 9000}, // то же устройство, другой privacy-адрес
+		{IP: "2001:db8:1:3::a", ConnCur: 1, RateOut: 5000},      // другая сеть /64
+		{IP: "198.51.100.7", ConnCur: 1, RateIn: 800, RateOut: 800},
+		{IP: "198.51.100.8", ConnCur: 1, RateOut: 10},    // keep-alive, не качает
+		{IP: "198.51.100.9", ConnCur: 0, RateOut: 99999}, // уже без соединений
+	}
+	c := Summarize(rows, 6, 3)
+	if c.Active != 5 || c.Flowing != 3 {
+		t.Fatalf("active=%d flowing=%d", c.Active, c.Flowing)
 	}
 }

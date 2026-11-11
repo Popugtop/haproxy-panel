@@ -70,6 +70,8 @@ export interface NodeSummary extends ReturnType<typeof publicNode> {
     load1: number;
     sessions: number;
     activeClients: number | null;
+    /** IP с заметным трафиком за минуту; null — агент старый и не считает. */
+    flowingClients: number | null;
     backendsTotal: number;
     backendsDown: number;
     haproxyOk: boolean;
@@ -89,6 +91,7 @@ export function liveSummary(l: LiveData): NonNullable<NodeSummary['live']> {
     load1: l.sys.load1,
     sessions: l.sessions,
     activeClients: l.clients?.active ?? null,
+    flowingClients: l.clients?.flowing ?? null,
     backendsTotal: l.backends.length,
     backendsDown: l.backends.filter((b) => b.status !== 'UP' && b.status !== 'OPEN').length,
     haproxyOk: l.haproxy.ok,

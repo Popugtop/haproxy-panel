@@ -50,7 +50,7 @@ export function NodesPage() {
         {n.bwlimSupported === false && <Label size="s" title="Лимиты скорости работают только на HAProxy 2.7 и новее">без bwlim</Label>}
       </span>
     ) },
-    { id: 'online', align: 'end', name: () => <Hint label="IP онлайн" tip="Клиентские IP с соединениями или трафиком за последнюю минуту" />, template: (n) => (n.status === 'online' && n.live?.activeClients != null ? int(n.live.activeClients) : '—') },
+    { id: 'online', align: 'end', name: () => <Hint label="IP онлайн" tip="IP, через которые за последнюю минуту шёл заметный трафик. В скобках — все IP с открытыми соединениями (включая простаивающие)." />, template: (n) => (n.status === 'online' && n.live?.activeClients != null ? <>{int(n.live.flowingClients ?? n.live.activeClients)}{n.live.flowingClients != null && <span className="secondary"> ({int(n.live.activeClients)})</span>}</> : '—') },
     { id: 'agent', name: 'Агент', template: (n) => (
       <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
         <span className="mono">{n.agentVersion ?? '—'}</span>
