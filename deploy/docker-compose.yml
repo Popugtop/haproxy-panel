@@ -20,7 +20,9 @@ services:
       context: ..
       dockerfile: panel/Dockerfile
       args:
-        VERSION: ${PANEL_VERSION:-0.1.0}
+        # Версия панели и встроенного агента. Поднимайте при каждом изменении агента: кнопка «Обновить» на ноде появляется,
+        # только когда версия в панели новее, чем у агента на мосту.
+        VERSION: ${PANEL_VERSION:-0.2.0}
       # Подпись агентов для обновления по кнопке: AGENT_SIGNING_KEY=/путь/к/release.key в .env (файл вне репозитория).
       secrets: [agent_key]
     restart: unless-stopped
