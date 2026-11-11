@@ -15,11 +15,12 @@ vi.mock('../lib/queries', () => ({
   useSystem: () => ({ data: { sniDomain: 'popug.cloud' } }),
 }));
 const post = vi.fn();
+const patch = vi.fn();
 vi.mock('../lib/api', async (orig) => ({
   ...(await orig<typeof import('../lib/api')>()),
   api: {
     post: (...a: unknown[]) => post(...a),
-    patch: vi.fn(),
+    patch: (...a: unknown[]) => patch(...a),
   },
 }));
 
@@ -116,5 +117,26 @@ describe('RouteDialog: сохранение и закрытие', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Создать' })).toBeTruthy());
     expect(screen.queryByText(/сохранён/)).toBeNull();
     expect((screen.getByPlaceholderText('Германия (🇷🇺 → 🇩🇪)') as HTMLInputElement).value).toBe('');
+  });
+});
+
+describe('RouteDialog: убранный мост', () => {
+  it('после снятия моста с маршрута шаг применения показывает и его', async () => {
+    patch.mockResolvedValue({
+      route: { ...route, nodes: [{ nodeId: 'n1', nodeName: 'aeza-1', pendingApply: true, online: true }] },
+      removedNodes: [{ nodeId: 'n2', nodeName: 'beget-2', online: true, pendingApply: true }],
+    });
+    function Edit() {
+      const [open, setOpen] = useState(true);
+      return <RouteDialog open={open} route={route} onClose={() => setOpen(false)} />;
+    }
+    wrap(<Edit />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await waitFor(() => expect(screen.getByText(/сохранён/)).toBeTruthy());
+    expect(screen.getByText('aeza-1')).toBeTruthy();
+    expect(screen.getByText('beget-2')).toBeTruthy();
+    expect(screen.getByText(/маршрут убран, на ноде ещё старый конфиг/)).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Дифф и применение…' })).toHaveLength(2);
   });
 });

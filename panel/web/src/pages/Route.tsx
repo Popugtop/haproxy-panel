@@ -6,9 +6,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ApplyDialog } from '../components/ApplyDialog';
+import { ApplyTargetRows } from '../components/ApplyTargets';
 import { RouteDialog } from '../components/RouteDialog';
 import { EmptyHint, Hint, Notice, StatusDot } from '../components/ui';
-import { api, ApiError, type CheckRow, type RouteDto, type RouteNodeStatus } from '../lib/api';
+import { api, ApiError, type ApplyTarget, type CheckRow, type RouteDto, type RouteNodeStatus } from '../lib/api';
 import { ago, dateTime } from '../lib/format';
 import { ROUTE_LABEL, routeTone } from '../lib/state';
 
@@ -16,21 +17,28 @@ export function RoutePage() {
   const { id = '' } = useParams();
   const nav = useNavigate();
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ['route', id], queryFn: () => api.get<{ route: RouteDto; history: CheckRow[] }>(`/api/routes/${id}`), refetchInterval: 8_000 });
+  const [deleted, setDeleted] = useState(false);
+  const q = useQuery({ queryKey: ['route', id], queryFn: () => api.get<{ route: RouteDto; history: CheckRow[] }>(`/api/routes/${id}`), refetchInterval: 8_000, enabled: !deleted });
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [applyFor, setApplyFor] = useState<RouteNodeStatus | null>(null);
+  /** После удаления: ноды, на которых конфиг ещё со старым маршрутом. */
+  const [after, setAfter] = useState<ApplyTarget[] | null>(null);
+  const [applyAfter, setApplyAfter] = useState<ApplyTarget | null>(null);
 
   const run = useMutation({
     mutationFn: () => api.post(`/api/routes/${id}/checks/run`),
     onSettled: () => q.refetch(),
   });
   const del = useMutation({
-    mutationFn: () => api.del(`/api/routes/${id}`),
-    onSuccess: () => {
+    mutationFn: () => api.del<{ ok: boolean; nodes?: ApplyTarget[] }>(`/api/routes/${id}`),
+    onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['routes'] });
       qc.invalidateQueries({ queryKey: ['config'] });
-      nav('/routes');
+      setDeleting(false);
+      setDeleted(true); // маршрута больше нет: страница не должна его перезапрашивать и падать в 404
+      if (r.nodes?.length) setAfter(r.nodes);
+      else nav('/routes');
     },
   });
 
@@ -104,6 +112,19 @@ export function RoutePage() {
 
       <RouteDialog open={editing} onClose={() => { setEditing(false); q.refetch(); }} route={r} />
       {applyFor && <ApplyDialog nodeId={applyFor.nodeId} nodeName={applyFor.nodeName} onClose={() => { setApplyFor(null); q.refetch(); }} />}
+      {after && !applyAfter && (
+        <Dialog open onOpenChange={(o) => !o && nav('/routes')} maxWidth="m" fullWidth aria-labelledby="route-deleted">
+          <Dialog.Header caption="Маршрут удалён" id="route-deleted" />
+          <Dialog.Body>
+            <div className="stack">
+              <Text color="secondary">На нодах конфиг пока прежний, и маршрут в нём остаётся. Применяйте на каждую ноду отдельно: у каждой свой дифф.</Text>
+              <ApplyTargetRows targets={after} onApply={setApplyAfter} />
+            </div>
+          </Dialog.Body>
+          <Dialog.Footer onClickButtonApply={() => nav('/routes')} textButtonApply="Готово" />
+        </Dialog>
+      )}
+      {applyAfter && <ApplyDialog nodeId={applyAfter.nodeId} nodeName={applyAfter.nodeName} onClose={() => setApplyAfter(null)} />}
       <Dialog open={deleting} onOpenChange={(o) => !o && setDeleting(false)} maxWidth="s" fullWidth aria-labelledby="route-del">
         <Dialog.Header caption="Удалить маршрут?" id="route-del" />
         <Dialog.Body>

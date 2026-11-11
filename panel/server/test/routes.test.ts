@@ -430,3 +430,32 @@ describe('сквозная проверка панели: TLS-рукопожат
     expect(rows[0]).toMatchObject({ source: 'panel', exitId: null, ok: true });
   });
 });
+
+describe('снятие моста с маршрута и удаление: ноды, где нужно применить конфиг', () => {
+  it('PATCH без одного моста возвращает его в removedNodes, на нём конфиг ещё старый', async () => {
+    const x = await h.makeNode('Икс');
+    const y = await h.makeNode('Игрек');
+    const created = await post('/api/routes', { name: 'Снятие', slug: 'rm1', snis: ['rm1.popug.cloud'], exitIds: [exitDe], nodeIds: [x.id, y.id] });
+    expect(created.status).toBe(201);
+    const id = created.json.route.id;
+
+    const r = await h.admin.req('PATCH', `/api/routes/${id}`, { nodeIds: [x.id] });
+    expect(r.status).toBe(200);
+    expect(r.json.route.nodes.map((n: any) => n.nodeName)).toEqual(['Икс']); // из самого маршрута Игрек уже исчез
+    expect(r.json.removedNodes).toHaveLength(1);
+    expect(r.json.removedNodes[0]).toMatchObject({ nodeId: y.id, nodeName: 'Игрек' });
+    expect(typeof r.json.removedNodes[0].pendingApply).toBe('boolean');
+    expect(typeof r.json.removedNodes[0].online).toBe('boolean');
+
+    // обычная правка без снятия нод ничего лишнего не возвращает
+    expect((await h.admin.req('PATCH', `/api/routes/${id}`, { name: 'Снятие 2' })).json.removedNodes).toEqual([]);
+  });
+
+  it('удаление маршрута возвращает ноды для применения', async () => {
+    const z = await h.makeNode('Зет');
+    const created = await post('/api/routes', { name: 'Удаление', slug: 'rm2', snis: ['rm2.popug.cloud'], exitIds: [exitDe], nodeIds: [z.id] });
+    const del = await h.admin.req('DELETE', `/api/routes/${created.json.route.id}`);
+    expect(del.status).toBe(200);
+    expect(del.json.nodes).toEqual([expect.objectContaining({ nodeId: z.id, nodeName: 'Зет' })]);
+  });
+});

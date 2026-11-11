@@ -2,10 +2,11 @@ import { flag, routeNameFor } from '@popug/protocol/countries';
 import { Button, Dialog, Label, Select, Switch, Text, TextArea, TextInput } from '@gravity-ui/uikit';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { api, ApiError, type ExitDto, type RouteDto, type RouteInput } from '../lib/api';
+import { api, ApiError, type ApplyTarget, type ExitDto, type RouteDto, type RouteInput } from '../lib/api';
 import { useExits, useNodes, useRoutes, useSystem } from '../lib/queries';
 import { useOnOpen } from '../lib/useOnOpen';
 import { ApplyDialog } from './ApplyDialog';
+import { ApplyTargetRows } from './ApplyTargets';
 import { ExitDialog } from './ExitDialog';
 import { Field, Notice } from './ui';
 
@@ -40,7 +41,7 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   const [ipLimit, setIpLimit] = useState('');
   const [touched, setTouched] = useState({ name: false, slug: false, snis: false });
   const [newExit, setNewExit] = useState(false);
-  const [saved, setSaved] = useState<RouteDto | null>(null);
+  const [saved, setSaved] = useState<{ route: RouteDto; targets: ApplyTarget[] } | null>(null);
   const [applyNode, setApplyNode] = useState<{ id: string; name: string } | null>(null);
 
   useOnOpen(open, () => {
@@ -94,9 +95,12 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   const body: RouteInput = { name: name.trim(), slug: slug.trim().toLowerCase(), snis: parseSnis(snis), exitIds, nodeIds, proxyProtocol: proxy, healthCheck: health, enabled, limitMbit: mbit(limit), ipLimitMbit: mbit(ipLimit) };
 
   const save = useMutation({
-    mutationFn: () => (route ? api.patch<{ route: RouteDto }>(`/api/routes/${route.id}`, body) : api.post<{ route: RouteDto }>('/api/routes', body)),
+    mutationFn: () => (route ? api.patch<{ route: RouteDto; removedNodes?: ApplyTarget[] }>(`/api/routes/${route.id}`, body) : api.post<{ route: RouteDto; removedNodes?: ApplyTarget[] }>('/api/routes', body)),
     onSuccess: (r) => {
-      setSaved(r.route);
+      // Текущие ноды маршрута плюс те, с которых маршрут только что убрали: на них конфиг тоже нужно применить.
+      const current: ApplyTarget[] = r.route.nodes.map((n) => ({ nodeId: n.nodeId, nodeName: n.nodeName, online: n.online, pendingApply: n.pendingApply }));
+      const removed = (r.removedNodes ?? []).filter((n) => !current.some((c) => c.nodeId === n.nodeId)).map((n) => ({ ...n, removed: true }));
+      setSaved({ route: r.route, targets: [...current, ...removed] });
       qc.invalidateQueries({ queryKey: ['routes'] });
       qc.invalidateQueries({ queryKey: ['config'] });
       qc.invalidateQueries({ queryKey: ['nodes'] });
@@ -117,21 +121,13 @@ export function RouteDialog({ open, onClose, route, presetNodeIds }: Props) {
   if (saved && open) {
     return (
       <Dialog open onOpenChange={(o) => !o && close()} maxWidth="m" fullWidth aria-labelledby="route-saved">
-        <Dialog.Header caption={`Маршрут «${saved.name}» сохранён`} id="route-saved" />
+        <Dialog.Header caption={`Маршрут «${saved.route.name}» сохранён`} id="route-saved" />
         <Dialog.Body>
           <div className="stack">
             <Text color="secondary">Конфиг на нодах пока прежний. Применяйте на каждую ноду отдельно: у каждой свой дифф, и если применение сорвётся, откатится только эта нода.</Text>
-            {saved.nodes.length > 0 && <Notice theme="info">Если на выходах включён фаервол, откройте на них порт для этого моста: страница «Выходы» → «Фаервол» покажет готовые команды.</Notice>}
-            {saved.nodes.length === 0 && <Notice theme="info">Маршрут не привязан ни к одной ноде, применять нечего.</Notice>}
-            {saved.nodes.map((n) => (
-              <div key={n.nodeId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--g-color-line-generic)' }}>
-                <div>
-                  <Text variant="subheader-2">{n.nodeName}</Text>
-                  <div><Text color={n.pendingApply ? 'warning' : 'positive'}>{n.pendingApply ? 'ожидает применения' : 'актуально'}</Text></div>
-                </div>
-                <Button view={n.pendingApply ? 'action' : 'outlined'} disabled={!n.online} onClick={() => setApplyNode({ id: n.nodeId, name: n.nodeName })}>{n.online ? 'Дифф и применение…' : 'Нода не на связи'}</Button>
-              </div>
-            ))}
+            {saved.targets.length === 0 && <Notice theme="info">Маршрут не привязан ни к одной ноде, применять нечего.</Notice>}
+            {saved.targets.length > 0 && <Notice theme="info">Если на выходах включён фаервол, откройте на них порт для этого моста: страница «Выходы» → «Фаервол» покажет готовые команды.</Notice>}
+            <ApplyTargetRows targets={saved.targets} onApply={(n) => setApplyNode({ id: n.nodeId, name: n.nodeName })} />
           </div>
         </Dialog.Body>
         <Dialog.Footer onClickButtonApply={close} textButtonApply="Готово" />

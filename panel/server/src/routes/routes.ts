@@ -128,6 +128,14 @@ export function routeRoutes(app: FastifyInstance, ctx: Ctx): void {
     });
   };
 
+  /** Ноды, на которых после изменения маршрута нужно применить конфиг (в том числе те, откуда маршрут убрали). */
+  const applyTargets = async (nodeIds: string[]) => {
+    const rows = nodeIds.length ? await db.select().from(schema.nodes).where(inArray(schema.nodes.id, nodeIds)) : [];
+    return Promise.all(
+      rows.map(async (n) => ({ nodeId: n.id, nodeName: n.name, online: registry.isOnline(n.id), pendingApply: !(await configState(db, n)).inSync })),
+    );
+  };
+
   app.get('/api/routes', auth, async () => ({ routes: await withStatus(await loadRoutes(db)) }));
 
   app.get('/api/nodes/:id/routes', auth, async (req) => {
@@ -184,7 +192,8 @@ export function routeRoutes(app: FastifyInstance, ctx: Ctx): void {
     await audit(db, actorOf(req), 'route.update', { type: 'route', id }, diffOf(beforeView, afterView), req.ip);
     await pushChecks(ctx, touchedNodes(before.nodeIds, input.nodeIds));
     const [r] = await withStatus(await loadRoutes(db, { routeId: id }));
-    return { route: r };
+    // Убранные ноды в маршруте уже не значатся, но конфиг на них ещё старый: без них окно не предложило бы применить.
+    return { route: r, removedNodes: await applyTargets(removed) };
   });
 
   app.delete('/api/routes/:id', auth, async (req) => {
@@ -195,7 +204,7 @@ export function routeRoutes(app: FastifyInstance, ctx: Ctx): void {
     await db.delete(schema.routes).where(eq(schema.routes.id, id));
     await audit(db, actorOf(req), 'route.delete', { type: 'route', id }, { slug: r.slug, name: r.name, nodes: r.nodeIds }, req.ip);
     await pushChecks(ctx, r.nodeIds);
-    return { ok: true, affectedNodes: r.nodeIds };
+    return { ok: true, affectedNodes: r.nodeIds, nodes: await applyTargets(r.nodeIds) };
   });
 
   // ───── проверки ─────

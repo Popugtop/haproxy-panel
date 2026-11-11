@@ -272,6 +272,16 @@ export interface CheckRow {
   error: string | null;
 }
 
+/** Нода, на которой после изменения маршрута нужно применить конфиг. */
+export interface ApplyTarget {
+  nodeId: string;
+  nodeName: string;
+  online: boolean;
+  pendingApply: boolean;
+  /** Маршрут с этой ноды убран: в самом маршруте её уже нет, но конфиг на ней старый. */
+  removed?: boolean;
+}
+
 export interface RouteInput {
   name: string;
   slug: string;
